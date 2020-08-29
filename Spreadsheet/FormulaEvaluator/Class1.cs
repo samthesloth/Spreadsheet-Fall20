@@ -2,7 +2,7 @@
 
 namespace FormulaEvaluator
 {
-    class Class1
+    public static class Evaluator
     {
         static void Main(string[] args)
         {
