@@ -14,7 +14,7 @@ namespace FormulaEvaluator
         /// </summary>
         /// <param name="v">Variable that needs to be looked up</param>
         /// <returns>Int value of the variable. Throws ArgumentException if the variable has no value.</returns>
-        public delegate int Lookup(String v);
+        public delegate int Lookup(string v);
 
         /// <summary>
         /// Takes in a string and delegate to find the value of the expression
