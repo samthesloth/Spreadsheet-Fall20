@@ -1,14 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Xml.Schema;
 
 namespace FormulaEvaluator
 {
-    /// <summary>
-    /// Takes in a string and evaluates the integer arithmetic expressions using standard infix notation
-    /// </summary>
+    /**
+     *  This program is used to evaluate an integer expression, allowing for the use of variables found using a delegate
+     *  Author: Sam Peters
+     */
     public static class Evaluator
     {
+        static void Main (string[] args)
+        {
+
+        }
+
         /// <summary>
         /// Delegate that looks up the int value of a variable, v
         /// </summary>
@@ -53,15 +60,7 @@ namespace FormulaEvaluator
                         //Pop value and do operand
                         if (values.TryPop(out int num1))
                         {
-                            if (c == '/' && num1 == 0)
-                                throw new ArgumentException("Dividing by 0.");
-                            else
-                            {
-                                if (c == '/')
-                                    values.Push(num1 / num2);
-                                else
-                                    values.Push(num1 * num2);
-                            }
+                            values.Push(Solve(num2, num1, c));
                         }
                         else
                             throw new ArgumentException("Adding or dividing with empty value stack.");
@@ -72,10 +71,8 @@ namespace FormulaEvaluator
                 }
 
                 //If s is variable
-                else if (Regex.IsMatch(s, @"^[a-zA-Z]+$"))
+                else if (Regex.IsMatch(s, "^[a-zA-Z]+[0-9]+$"))
                 {
-                    s = GetVar(s, i, tokens);
-                    i += s.Length - 1;
                     int num2;
                     //Check if var exists
                     try
@@ -90,19 +87,10 @@ namespace FormulaEvaluator
                     //If * or / is on operator stack
                     if (operators.TryPeek(out char c) && (c == '*' || c == '/'))
                     {
-                        operators.Pop();
                         //Pop value and do operand
                         if (values.TryPop(out int num1))
                         {
-                            if (c == '/' && num2 == 0)
-                                throw new ArgumentException("Dividing by 0.");
-                            else
-                            {
-                                if (c == '/')
-                                    values.Push(num1 / num2);
-                                else
-                                    values.Push(num1 * num2);
-                            }
+                            values.Push(Solve(num2, num1, operators.Pop()));
                         }
                         else
                             throw new ArgumentException("Adding or dividing with empty value stack.");
@@ -123,13 +111,7 @@ namespace FormulaEvaluator
                         //If 2+ values exist in values stack
                         if (values.Count > 1)
                         {
-                            operators.Pop();
-                            int num2 = values.Pop();
-                            int num1 = values.Pop();
-                            if (c1 == '+')
-                                values.Push(num1 + num2);
-                            else
-                                values.Push(num1 - num2);
+                            values.Push(Solve(values.Pop(), values.Pop(), operators.Pop()));
                         }
                         else
                             throw new ArgumentException("Attempting to add or subtract with less than 2 values in the values stack.");
@@ -142,11 +124,11 @@ namespace FormulaEvaluator
                     operators.Push(tempChar);
 
                 //If s is (
-                else if (char.TryParse(s, out tempChar) && tempChar == ')')
+                else if (char.TryParse(s, out tempChar) && tempChar == '(')
                     operators.Push(tempChar);
 
                 //If s is )
-                else if (char.TryParse(s, out tempChar) && tempChar == '(')
+                else if (char.TryParse(s, out tempChar) && tempChar == ')')
                 {
                     //If + or - is at top of operator stack
                     if (operators.TryPeek(out char c1) && (c1 == '+' || c1 == '-'))
@@ -154,13 +136,7 @@ namespace FormulaEvaluator
                         //If 2+ values exist in values stack
                         if (values.Count > 1)
                         {
-                            operators.Pop();
-                            int num2 = values.Pop();
-                            int num1 = values.Pop();
-                            if (c1 == '+')
-                                values.Push(num1 + num2);
-                            else
-                                values.Push(num1 - num2);
+                            values.Push(Solve(values.Pop(), values.Pop(), operators.Pop()));
 
                             //Make sure ( is next in stack
                             if (operators.TryPeek(out char openBrack) && openBrack == '(')
@@ -171,27 +147,25 @@ namespace FormulaEvaluator
                         else
                             throw new ArgumentException("Attempting to add or subtract with less than 2 values in the values stack.");
                     }
+
+                    else if (operators.TryPeek(out char openBrack) && openBrack == '(')
+                        operators.Pop();
+
                     //If * or / is on operator stack
                     if (operators.TryPeek(out char c) && (c == '*' || c == '/'))
                     {
-                        operators.Pop();
                         //If 2+ values exist in values stack
                         if (values.Count > 1)
                         {
-                            operators.Pop();
-                            int num2 = values.Pop();
-                            int num1 = values.Pop();
-                            if (c == '/' && num2 == 0)
-                                throw new ArgumentException("Dividing by 0.");
-                            if (c1 == '*')
-                                values.Push(num1 * num2);
-                            else
-                                values.Push(num1 / num2);
+                            values.Push(Solve(values.Pop(), values.Pop(), operators.Pop()));
                         }
                         else
                             throw new ArgumentException("Attempting to multiply or divide with less than 2 values in the values stack.");
                     }
                 }
+                //Otherwise, throw exception
+                else
+                    throw new ArgumentException("Invalid token found");
             }
             //If operator stack is empty
             if (operators.Count == 0 && values.Count == 1)
@@ -199,47 +173,37 @@ namespace FormulaEvaluator
             //If operator stack is not empty
             else if (operators.Count == 1 && (operators.Peek() == '+' || operators.Peek() == '-') && values.Count == 2)
             {
-                tempChar = operators.Pop();
-                if (tempChar == '+')
-                    return values.Pop() + values.Pop();
-                else
-                    return -values.Pop() + values.Pop();
+                return Solve(values.Pop(), values.Pop(), operators.Pop());
             }
             else
-                throw new ArgumentException("Invalid expression, unable to compelete operation");
+                throw new ArgumentException("Invalid expression, unable to compelete operation.");
         }
 
         /// <summary>
-        /// Finds whole var in the tokens
+        /// Gets numbers and operator to find result
         /// </summary>
-        /// <param name="s">Starting string of variable</param>
-        /// <param name="i">Index of starting string in tokens</param>
-        /// <param name="tokens">Tokens from evaluator method</param>
-        /// <exception cref="System.ArgumentException">Thrown when invalid variable is given</exception>
-        /// <returns></returns>
-        private static string GetVar(string s, int i, string[] tokens)
+        /// <param name="num2">Second number of equation</param>
+        /// <param name="num1">First number of equation</param>
+        /// <param name="oper">Operator to be applied to nums</param>
+        /// <exception cref="System.ArgumentException">Thrown when trying to divide by zero</exception>
+        /// <returns>Value found from the equation</returns>
+        private static int Solve(int num2, int num1, char oper)
         {
-            if (Regex.IsMatch(tokens[i + 1], @"^[a-zA-Z]+$") || int.TryParse(tokens[i + 1], out int temp))
+            switch(oper)
             {
-                while (Regex.IsMatch(tokens[i + 1], @"^[a-zA-Z]+$"))
-                {
-                    s += tokens[i + 1];
-                    i++;
-                }
-                if (int.TryParse(tokens[i + 1], out temp))
-                {
-                    while (int.TryParse(tokens[i + 1], out temp))
-                    {
-                        s += tokens[i + 1];
-                        i++;
-                    }
-                }
-                else
-                    throw new ArgumentException("Invalid variable starting with " + s);
+                case '+':
+                    return num1 + num2;
+                case '-':
+                    return num1 - num2;
+                case '*':
+                    return num1 * num2;
+                case '/':
+                    if (num2 == 0)
+                        throw new ArgumentException("Dividing by zero.");
+                    else
+                        return num1 / num2;
             }
-            else
-                throw new ArgumentException("Invalid variable starting with " + s);
-            return s;
+            return 0;
         }
     }
 }
