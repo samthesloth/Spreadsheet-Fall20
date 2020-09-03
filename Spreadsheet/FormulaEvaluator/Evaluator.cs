@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using System.Xml.Schema;
 
 namespace FormulaEvaluator
 {
@@ -9,13 +8,12 @@ namespace FormulaEvaluator
      *  This program is used to evaluate an integer expression, allowing for the use of variables found using a delegate
      *  Author: Sam Peters
      */
+
     public static class Evaluator
     {
         public static void Main(string[] args)
         {
-
         }
-
 
         /// <summary>
         /// Delegate that looks up the int value of a variable, v
@@ -148,7 +146,6 @@ namespace FormulaEvaluator
                         else
                             throw new ArgumentException("Attempting to add or subtract with less than 2 values in the values stack.");
                     }
-
                     else if (operators.TryPeek(out char openBrack) && openBrack == '(')
                         operators.Pop();
 
@@ -190,17 +187,20 @@ namespace FormulaEvaluator
         /// <returns>Value found from the equation</returns>
         private static int Solve(int num2, int num1, char oper)
         {
-            switch(oper)
+            switch (oper)
             {
                 case '+':
                     return num1 + num2;
+
                 case '-':
                     return num1 - num2;
+
                 case '*':
                     return num1 * num2;
+
                 case '/':
                     if (num2 == 0)
-                        throw new ArgumentException("Dividing by zero.");
+                        throw new ArgumentException("Division by zero.");
                     else
                         return num1 / num2;
             }
