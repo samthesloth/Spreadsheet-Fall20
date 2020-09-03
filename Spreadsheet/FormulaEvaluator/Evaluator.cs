@@ -11,10 +11,11 @@ namespace FormulaEvaluator
      */
     public static class Evaluator
     {
-        static void Main (string[] args)
+        public static void Main(string[] args)
         {
 
         }
+
 
         /// <summary>
         /// Delegate that looks up the int value of a variable, v
@@ -32,25 +33,25 @@ namespace FormulaEvaluator
         /// <returns>Int solution of the expression</returns>
         public static int Evaluate(String exp, Lookup variableEvaluator)
         {
+            //Makes sure string is not null or only white space
+            if (string.IsNullOrWhiteSpace(exp))
+                throw new ArgumentException("Input is Null or String with only whitespace / empty");
+
             //Makes array of tokens and stacks for ints and operators
             string[] tokens = Regex.Split(exp, "(\\()|(\\))|(-)|(\\+)|(\\*)|(/)");
             Stack<int> values = new Stack<int>();
             Stack<char> operators = new Stack<char>();
-            char tempChar;
-            int tempInt;
-            int i;
 
             //Goes through tokens to evaluate expression
-
-            for (i = 0; i < tokens.Length; i++)
+            foreach (string token in tokens)
             {
-                string s = tokens[i];
-                s = s.Trim();
+                string s = token.Trim();
+
                 if (string.IsNullOrWhiteSpace(s))
                     continue;
 
                 //If s is an int
-                if (int.TryParse(s, out tempInt))
+                if (int.TryParse(s, out int tempInt))
                 {
                     int num2 = tempInt;
                     //If * or / is on operator stack
@@ -101,7 +102,7 @@ namespace FormulaEvaluator
                 }
 
                 //If s is + or -
-                else if (char.TryParse(s, out tempChar) && (tempChar == '+' || tempChar == '-'))
+                else if (char.TryParse(s, out char tempChar) && (tempChar == '+' || tempChar == '-'))
                 {
                     char c2 = tempChar;
 

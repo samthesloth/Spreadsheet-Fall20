@@ -7,6 +7,7 @@ namespace FormulaEvaluatorTest
     [TestClass]
     public class ExceptionTests
     {
+
         private static int Vars(string s)
         {
             switch (s)
@@ -23,6 +24,8 @@ namespace FormulaEvaluatorTest
                     throw new NullReferenceException();
             }
         }
+
+
 
         [TestMethod]
         [ExpectedException (typeof(ArgumentException))]
@@ -99,6 +102,27 @@ namespace FormulaEvaluatorTest
         public void FinalException2()
         {
             Evaluator.Evaluate("5 * 10 +", Vars);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void TokenException1()
+        {
+            Evaluator.Evaluate("", Vars);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void TokenException2()
+        {
+            Evaluator.Evaluate("/", Vars);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void TokenException3()
+        {
+            Evaluator.Evaluate(null, Vars);
         }
     }
 }

@@ -6,6 +6,7 @@ namespace FormulaEvaluatorTest
     [TestClass]
     public class BasicTests
     {
+
         private static int Vars(string s)
         {
             switch(s)
@@ -20,7 +21,6 @@ namespace FormulaEvaluatorTest
                     return 0;
             }
         }
-
 
         [TestMethod]
         public void Addition()
@@ -61,7 +61,7 @@ namespace FormulaEvaluatorTest
         [TestMethod]
         public void Parentheses()
         {
-            Assert.AreEqual(Evaluator.Evaluate("5 * (3 + 4) - 2 + (6*(2+3))", Vars), 69);
+            Assert.AreEqual(Evaluator.Evaluate("5 * (3 + 4) - 2 + (6*(2+3))", Vars), 63);
         }
     }
 }
