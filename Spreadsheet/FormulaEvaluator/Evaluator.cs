@@ -51,22 +51,10 @@ namespace FormulaEvaluator
                 //If s is an int
                 if (int.TryParse(s, out int tempInt))
                 {
-                    int num2 = tempInt;
-                    //If * or / is on operator stack
-                    if (operators.TryPeek(out char c) && (c == '*' || c == '/'))
-                    {
-                        operators.Pop();
-                        //Pop value and do operand
-                        if (values.TryPop(out int num1))
-                        {
-                            values.Push(Solve(num2, num1, c));
-                        }
-                        else
-                            throw new ArgumentException("Adding or dividing with empty value stack.");
-                    }
-                    //Otherwise, just add to values stack
-                    else
-                        values.Push(num2);
+                    //Adds num2 to values for helper method
+                    values.Push(tempInt);
+                    
+                    MiniEquate(values, operators, false);
                 }
 
                 //If s is variable
@@ -83,38 +71,15 @@ namespace FormulaEvaluator
                         throw new ArgumentException("Value for variable " + s + " cannot be found.");
                     }
 
-                    //If * or / is on operator stack
-                    if (operators.TryPeek(out char c) && (c == '*' || c == '/'))
-                    {
-                        //Pop value and do operand
-                        if (values.TryPop(out int num1))
-                        {
-                            values.Push(Solve(num2, num1, operators.Pop()));
-                        }
-                        else
-                            throw new ArgumentException("Adding or dividing with empty value stack.");
-                    }
-                    //Otherwise, just add to values stack
-                    else
-                        values.Push(num2);
+                    values.Push(num2);
+                    MiniEquate(values, operators, false);
                 }
 
                 //If s is + or -
                 else if (char.TryParse(s, out char tempChar) && (tempChar == '+' || tempChar == '-'))
                 {
                     char c2 = tempChar;
-
-                    //If + or - on operator stack
-                    if (operators.TryPeek(out char c1) && (c1 == '+' || c1 == '-'))
-                    {
-                        //If 2+ values exist in values stack
-                        if (values.Count > 1)
-                        {
-                            values.Push(Solve(values.Pop(), values.Pop(), operators.Pop()));
-                        }
-                        else
-                            throw new ArgumentException("Attempting to add or subtract with less than 2 values in the values stack.");
-                    }
+                    MiniEquate(values, operators, true);
                     operators.Push(c2);
                 }
 
@@ -130,36 +95,19 @@ namespace FormulaEvaluator
                 else if (char.TryParse(s, out tempChar) && tempChar == ')')
                 {
                     //If + or - is at top of operator stack
-                    if (operators.TryPeek(out char c1) && (c1 == '+' || c1 == '-'))
+                    if(MiniEquate(values, operators, true))
                     {
-                        //If 2+ values exist in values stack
-                        if (values.Count > 1)
-                        {
-                            values.Push(Solve(values.Pop(), values.Pop(), operators.Pop()));
-
-                            //Make sure ( is next in stack
-                            if (operators.TryPeek(out char openBrack) && openBrack == '(')
-                                operators.Pop();
-                            else
-                                throw new ArgumentException("Expected '(' not found.");
-                        }
+                        //Make sure ( is next in stack
+                        if (operators.TryPeek(out char openBrack) && openBrack == '(')
+                            operators.Pop();
                         else
-                            throw new ArgumentException("Attempting to add or subtract with less than 2 values in the values stack.");
+                            throw new ArgumentException("Expected '(' not found.");
                     }
                     else if (operators.TryPeek(out char openBrack) && openBrack == '(')
                         operators.Pop();
 
                     //If * or / is on operator stack
-                    if (operators.TryPeek(out char c) && (c == '*' || c == '/'))
-                    {
-                        //If 2+ values exist in values stack
-                        if (values.Count > 1)
-                        {
-                            values.Push(Solve(values.Pop(), values.Pop(), operators.Pop()));
-                        }
-                        else
-                            throw new ArgumentException("Attempting to multiply or divide with less than 2 values in the values stack.");
-                    }
+                    MiniEquate(values, operators, false);
                 }
                 //Otherwise, throw exception
                 else
@@ -205,6 +153,57 @@ namespace FormulaEvaluator
                         return num1 / num2;
             }
             return 0;
+        }
+
+        /// <summary>
+        /// Adds, subtracts, multiply, or divide when called
+        /// </summary>
+        /// <param name="values">Values stack to be used</param>
+        /// <param name="operators">Operators stack to be used</param>
+        /// <param name="addSub">Tells method if equating addition and subtraction or multiplication and division</param>
+        /// <exception cref="System.ArgumentException">Thrown when value stack does not have enough values</exception>
+        /// <returns>If operation was successful</returns>
+        private static bool MiniEquate(Stack<int> values, Stack<char> operators, bool addSub)
+        {
+            if(addSub)
+            {
+                //If + or - on operator stack
+                if (operators.TryPeek(out char c1) && (c1 == '+' || c1 == '-'))
+                {
+                    //If 2+ values exist in values stack
+                    if (values.Count > 1)
+                    {
+                        values.Push(Solve(values.Pop(), values.Pop(), operators.Pop()));
+                        return true;
+                    }
+                    else
+                        throw new ArgumentException("Attempting to add or subtract with less than 2 values in the values stack.");
+                }
+            }
+            else
+            {
+                //Make sure value is on stack
+                if (!values.TryPop(out int num2))
+                    throw new ArgumentException("Multiplying or dividing with empty values stack");
+
+                //If * or / is on operator stack
+                if (operators.TryPeek(out char c) && (c == '*' || c == '/'))
+                {
+                    operators.Pop();
+                    //Pop value and do operand
+                    if (values.TryPeek(out int num1))
+                    {
+                        values.Push(Solve(num2, values.Pop(), c)); ;
+                        return true;
+                    }
+                    else
+                        throw new ArgumentException("Adding or dividing with empty value stack.");
+                }
+                //Otherwise, just add to values stack
+                else
+                    values.Push(num2);
+            }
+            return false;
         }
     }
 }

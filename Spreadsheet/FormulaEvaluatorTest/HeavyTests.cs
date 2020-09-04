@@ -41,6 +41,12 @@ namespace FormulaEvaluatorTest
             Assert.AreEqual(Evaluator.Evaluate("(1) (1) +", Vars), 2);
         }
 
+        [TestMethod]
+        public void Parentheses4()
+        {
+            Assert.AreEqual(Evaluator.Evaluate("(3 * 4) + 7", Vars), 19);
+        }
+
 
         [TestMethod]
         public void Complicated1()
@@ -52,6 +58,12 @@ namespace FormulaEvaluatorTest
         public void Complicated2()
         {
             Assert.AreEqual(Evaluator.Evaluate("(50 + 3-(123 / 5) * 3 +(5 * 1) - 15) * 7", Vars), -203);
+        }
+
+        [TestMethod]
+        public void Complicated3()
+        {
+            Assert.AreEqual(Evaluator.Evaluate("45-19/(20+3)*((10+6)/3)-(10+9)*(25/5)-(10+10*(11-10))", Vars), -70);
         }
 
     }
