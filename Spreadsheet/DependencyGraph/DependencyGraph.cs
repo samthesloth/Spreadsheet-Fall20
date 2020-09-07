@@ -6,6 +6,7 @@
 // Everything after - Sam Peters
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SpreadsheetUtilities
 {
@@ -78,7 +79,13 @@ namespace SpreadsheetUtilities
         /// </summary>
         public int this[string s]
         {
-            get { return dependees["s"].Count; }
+            get
+            {
+                if (dependees.ContainsKey(s))
+                    return dependees[s].Count;
+                else
+                    return 0;
+            }
         }
 
         /// <summary>
@@ -102,7 +109,10 @@ namespace SpreadsheetUtilities
         /// </summary>
         public IEnumerable<string> GetDependents(string s)
         {
-            return dependents[s];
+            if (dependents.ContainsKey(s))
+                return dependents[s];
+            else
+                return new List<string>();
         }
 
         /// <summary>
@@ -110,7 +120,10 @@ namespace SpreadsheetUtilities
         /// </summary>
         public IEnumerable<string> GetDependees(string s)
         {
-            return dependees[s];
+            if (dependees.ContainsKey(s))
+                return dependees[s];
+            else
+                return new List<string>();
         }
 
         /// <summary>
@@ -177,13 +190,13 @@ namespace SpreadsheetUtilities
         /// </summary>
         public void ReplaceDependents(string s, IEnumerable<string> newDependents)
         {
-            if(!dependents.ContainsKey(s))
+            if (!dependents.ContainsKey(s))
                 dependents.Add(s, new HashSet<string>());
             else
-                foreach(string t in dependents[s])
+                foreach (string t in dependents[s].ToList())
                     this.RemoveDependency(s, t);
 
-            foreach(string t in newDependents)
+            foreach (string t in newDependents)
             {
                 this.AddDependency(s, t);
             }
@@ -198,7 +211,7 @@ namespace SpreadsheetUtilities
             if (!dependees.ContainsKey(s))
                 dependees.Add(s, new HashSet<string>());
             else
-                foreach (string t in dependees[s])
+                foreach (string t in dependees[s].ToList())
                     this.RemoveDependency(t, s);
 
             foreach (string t in newDependees)
