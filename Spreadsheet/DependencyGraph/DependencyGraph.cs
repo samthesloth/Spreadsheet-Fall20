@@ -5,6 +5,7 @@
 //               (Clarified names in solution/project structure.)
 // Everything after - Sam Peters
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -81,6 +82,8 @@ namespace SpreadsheetUtilities
         {
             get
             {
+                CheckValid(s);
+
                 if (dependees.ContainsKey(s))
                     return dependees[s].Count;
                 else
@@ -93,7 +96,11 @@ namespace SpreadsheetUtilities
         /// </summary>
         public bool HasDependents(string s)
         {
-            return dependents.ContainsKey(s);
+            CheckValid(s);
+
+            if (dependents.ContainsKey(s))
+                return (dependents[s].Count > 0);
+            return false;
         }
 
         /// <summary>
@@ -101,7 +108,11 @@ namespace SpreadsheetUtilities
         /// </summary>
         public bool HasDependees(string s)
         {
-            return dependees.ContainsKey(s);
+            CheckValid(s);
+
+            if (dependees.ContainsKey(s))
+                return (dependees[s].Count > 0);
+            return false;
         }
 
         /// <summary>
@@ -109,6 +120,8 @@ namespace SpreadsheetUtilities
         /// </summary>
         public IEnumerable<string> GetDependents(string s)
         {
+            CheckValid(s);
+
             if (dependents.ContainsKey(s))
                 return dependents[s];
             else
@@ -120,6 +133,8 @@ namespace SpreadsheetUtilities
         /// </summary>
         public IEnumerable<string> GetDependees(string s)
         {
+            CheckValid(s);
+
             if (dependees.ContainsKey(s))
                 return dependees[s];
             else
@@ -135,9 +150,12 @@ namespace SpreadsheetUtilities
         ///
         /// </summary>
         /// <param name="s"> s must be evaluated first. T depends on S</param>
-        /// <param name="t"> t cannot be evaluated until s is</param>        ///
+        /// <param name="t"> t cannot be evaluated until s is</param>
         public void AddDependency(string s, string t)
         {
+            CheckValid(s);
+            CheckValid(t);
+
             if (dependents.ContainsKey(s) && !dependents[s].Contains(t))
             {
                 dependents[s].Add(t);
@@ -176,6 +194,9 @@ namespace SpreadsheetUtilities
         /// <param name="t"></param>
         public void RemoveDependency(string s, string t)
         {
+            CheckValid(s);
+            CheckValid(t);
+
             if (dependents.ContainsKey(s) && dependents[s].Contains(t))
             {
                 dependents[s].Remove(t);
@@ -188,8 +209,12 @@ namespace SpreadsheetUtilities
         /// Removes all existing ordered pairs of the form (s,r).  Then, for each
         /// t in newDependents, adds the ordered pair (s,t).
         /// </summary>
+        /// <param name="s"> s is node with dependants being replaced</param>
+        /// <param name="newDependents"> Enumerable of new dependents</param>
         public void ReplaceDependents(string s, IEnumerable<string> newDependents)
         {
+            CheckValid(s);
+
             if (!dependents.ContainsKey(s))
                 dependents.Add(s, new HashSet<string>());
             else
@@ -198,6 +223,7 @@ namespace SpreadsheetUtilities
 
             foreach (string t in newDependents)
             {
+                CheckValid(t);
                 this.AddDependency(s, t);
             }
         }
@@ -206,8 +232,12 @@ namespace SpreadsheetUtilities
         /// Removes all existing ordered pairs of the form (r,s).  Then, for each
         /// t in newDependees, adds the ordered pair (t,s).
         /// </summary>
+        /// <param name="s"> s is node with dependees being replaced</param>
+        /// <param name="newDependees"> Enumerable of new dependees</param>
         public void ReplaceDependees(string s, IEnumerable<string> newDependees)
         {
+            CheckValid(s);
+
             if (!dependees.ContainsKey(s))
                 dependees.Add(s, new HashSet<string>());
             else
@@ -216,8 +246,20 @@ namespace SpreadsheetUtilities
 
             foreach (string t in newDependees)
             {
+                CheckValid(t);
                 this.AddDependency(t, s);
             }
+        }
+
+        /// <summary>
+        /// Checks if given string is null or empty, and throws exception if applicable
+        /// </summary>
+        /// <param name="s"> s is string to be checked</param>
+        /// <exception cref="System.ArgumentException">Thrown when null or empty string is given</exception>
+        public void CheckValid(string s)
+        {
+            if (string.IsNullOrEmpty(s))
+                throw new ArgumentException("Method was called with empty or null string");
         }
     }
 }
