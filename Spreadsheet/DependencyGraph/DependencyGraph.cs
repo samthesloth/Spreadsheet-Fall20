@@ -50,9 +50,6 @@ namespace SpreadsheetUtilities
         /// </summary>
         private Dictionary<string, HashSet<string>> dependents;
 
-        //Holds how many pairs in graph
-        private int pairCount;
-
         /// <summary>
         /// Creates an empty DependencyGraph.
         /// </summary>
@@ -60,16 +57,13 @@ namespace SpreadsheetUtilities
         {
             dependees = new Dictionary<string, HashSet<string>>();
             dependents = new Dictionary<string, HashSet<string>>();
-            pairCount = 0;
+            Size = 0;
         }
 
         /// <summary>
         /// The number of ordered pairs in the DependencyGraph.
         /// </summary>
-        public int Size
-        {
-            get { return pairCount; }
-        }
+        public int Size { get; private set; }
 
         /// <summary>
         /// The size of dependees(s).
@@ -168,7 +162,7 @@ namespace SpreadsheetUtilities
                     dependees[t].Add(s);
                 }
 
-                pairCount++;
+                Size++;
             }
             else if (!dependents.ContainsKey(s))
             {
@@ -183,7 +177,7 @@ namespace SpreadsheetUtilities
                     dependees[t].Add(s);
                 }
 
-                pairCount++;
+                Size++;
             }
         }
 
@@ -201,7 +195,7 @@ namespace SpreadsheetUtilities
             {
                 dependents[s].Remove(t);
                 dependees[t].Remove(s);
-                pairCount--;
+                Size--;
             }
         }
 
@@ -256,7 +250,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         /// <param name="s"> s is string to be checked</param>
         /// <exception cref="System.ArgumentException">Thrown when null or empty string is given</exception>
-        public void CheckValid(string s)
+        private void CheckValid(string s)
         {
             if (string.IsNullOrEmpty(s))
                 throw new ArgumentException("Method was called with empty or null string");

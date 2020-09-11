@@ -1,10 +1,10 @@
+//Author - Sam Peters
+
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SpreadsheetUtilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SpreadsheetUtilities;
-
 
 namespace DevelopmentTests
 {
@@ -36,7 +36,7 @@ namespace DevelopmentTests
         }
 
         [TestMethod()]
-        public void HasAndCountAfterRemove()
+        public void HasDependentsAndSizeAfterRemove()
         {
             DependencyGraph t = new DependencyGraph();
             t.AddDependency("A", "B");
@@ -106,7 +106,7 @@ namespace DevelopmentTests
             DependencyGraph t = new DependencyGraph();
             t.AddDependency("A", "B");
             t.AddDependency("C", "B");
-            Assert.IsFalse (t.HasDependees("A"));
+            Assert.IsFalse(t.HasDependees("A"));
             Assert.IsFalse(t.HasDependees("C"));
             Assert.IsTrue(t.HasDependees("B"));
             t.RemoveDependency("A", "B");
