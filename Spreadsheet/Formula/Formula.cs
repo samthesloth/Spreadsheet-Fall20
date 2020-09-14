@@ -23,6 +23,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
+using ExtensionMethods;
 
 namespace SpreadsheetUtilities
 {
@@ -191,11 +192,12 @@ namespace SpreadsheetUtilities
             //Makes stacks for doubles and operators
             Stack<double> values = new Stack<double>();
             Stack<char> operators = new Stack<char>();
+            object error = null;
 
             //Goes through tokens to evaluate expression
             foreach (string s in tokens)
             {
-                Object error = null;
+                error = null;
                 //If s is a double
                 if (Double.TryParse(s, out double tempDouble) || Double.TryParse(s, System.Globalization.NumberStyles.Float, null, out tempDouble))
                 {
@@ -281,6 +283,7 @@ namespace SpreadsheetUtilities
             //If operator stack is not empty
             else if (operators.Count == 1 && (operators.Peek() == '+' || operators.Peek() == '-') && values.Count == 2)
             {
+                error = null;
                 double temp =  Solve(values.Pop(), values.Pop(), operators.Pop(), ref error);
                 if (!(error is null))
                     return error;
@@ -552,5 +555,32 @@ namespace SpreadsheetUtilities
         ///  The reason why this FormulaError was created.
         /// </summary>
         public string Reason { get; private set; }
+    }
+}
+
+namespace ExtensionMethods
+{
+    public static class MyExtensions
+    {
+        public static bool TryPeek<T>(this Stack<T> stack, out T result)
+        {
+            if (stack.Count > 0) {
+                result = stack.Peek();
+                return true;
+            }
+            result = default(T);
+            return false;
+        }
+
+        public static bool TryPop<T>(this Stack<T> stack, out T result)
+        {
+            if (stack.Count > 0)
+            {
+                result = stack.Pop();
+                return true;
+            }
+            result = default(T);
+            return false;
+        }
     }
 }
