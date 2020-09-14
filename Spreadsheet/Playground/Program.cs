@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.RegularExpressions;
 
 namespace Playground
 {
@@ -6,7 +7,10 @@ namespace Playground
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            string validVar = "^[a-zA-Z_]+[0-9a-zA-Z_]*$";
+
+            Console.WriteLine(Regex.IsMatch("a_5_a3&", validVar));
+            Console.Read();
         }
     }
 }

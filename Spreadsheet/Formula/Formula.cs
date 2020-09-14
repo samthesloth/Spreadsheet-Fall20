@@ -21,9 +21,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
+using System.Linq.Expressions;
 using System.Text.RegularExpressions;
-using System.Threading;
 
 namespace SpreadsheetUtilities
 {
@@ -122,7 +121,7 @@ namespace SpreadsheetUtilities
                 }
 
                 //Checks if var, then normalizes and reassign var, then check if valid
-                if(Regex.IsMatch(current, validVar))
+                if (Regex.IsMatch(current, validVar))
                 {
                     tokens[i] = normalize(current);
                     current = normalize(current);
@@ -132,7 +131,7 @@ namespace SpreadsheetUtilities
                 }
 
                 //Check if parenthesis, increment accordingly, and make sure leftParentheses < rightParentheses
-                    if (current.Equals("(")) openParentheses++;
+                if (current.Equals("(")) openParentheses++;
                 if (current.Equals(")")) closeParentheses++;
                 if (closeParentheses > openParentheses)
                     throw new FormulaFormatException("Closed parenthesis found before open parenthesis at index " + i + ". Check formula input.");
@@ -142,7 +141,7 @@ namespace SpreadsheetUtilities
                 {
                     if (i < tokens.Length - 2)
                         throw new FormulaFormatException("Formula ends with open parenthesis or operator. Check formula input.");
-                    if (!Double.TryParse(tokens[i+1], out throwaway) && !Double.TryParse(tokens[i+1], System.Globalization.NumberStyles.Float, null, out throwaway) && !Regex.IsMatch(tokens[i+1], validVar) && !tokens[i+1].Equals("("))
+                    if (!Double.TryParse(tokens[i + 1], out throwaway) && !Double.TryParse(tokens[i + 1], System.Globalization.NumberStyles.Float, null, out throwaway) && !Regex.IsMatch(tokens[i + 1], validVar) && !tokens[i + 1].Equals("("))
                     {
                         throw new FormulaFormatException("Invalid token follows open parenthesis or operator. Check to make sure token at index " + (i + 1) + " is a number, variable, or open parenthesis.");
                     }
@@ -189,7 +188,208 @@ namespace SpreadsheetUtilities
         /// </summary>
         public object Evaluate(Func<string, double> lookup)
         {
-            return null;
+            //Makes stacks for doubles and operators
+            Stack<double> values = new Stack<double>();
+            Stack<char> operators = new Stack<char>();
+
+            //Goes through tokens to evaluate expression
+            foreach (string s in tokens)
+            {
+                Object error = null;
+                //If s is a double
+                if (Double.TryParse(s, out double tempDouble) || Double.TryParse(s, System.Globalization.NumberStyles.Float, null, out tempDouble))
+                {
+                    //Adds num2 to values for helper method
+                    values.Push(tempDouble);
+                    MiniEquate(values, operators, false, ref error);
+                    if (!(error is null))
+                        return error;
+                }
+
+                //If s is variable
+                else if (Regex.IsMatch(s, validVar))
+                {
+                    double num2;
+                    //Check if var exists
+                    try
+                    {
+                        num2 = lookup(s);
+                    }
+                    catch
+                    {
+                        return new FormulaError("Variable " + s + " not found using lookup function.");
+                    }
+
+                    values.Push(num2);
+                    MiniEquate(values, operators, false, ref error);
+                    if (!(error is null))
+                        return error;
+                }
+
+                //If s is + or -
+                else if (char.TryParse(s, out char tempChar) && (tempChar == '+' || tempChar == '-'))
+                {
+                    char c2 = tempChar;
+                    MiniEquate(values, operators, true, ref error);
+                    if (!(error is null))
+                        return error;
+                    operators.Push(c2);
+                }
+
+                //If s is * or /
+                else if (char.TryParse(s, out tempChar) && (tempChar == '*' || tempChar == '/'))
+                    operators.Push(tempChar);
+
+                //If s is (
+                else if (char.TryParse(s, out tempChar) && tempChar == '(')
+                    operators.Push(tempChar);
+
+                //If s is )
+                else if (char.TryParse(s, out tempChar) && tempChar == ')')
+                {
+                    //If + or - is at top of operator stack
+                    if (MiniEquate(values, operators, true, ref error))
+                    {
+                        if (!(error is null))
+                            return error;
+                        //Make sure ( is next in stack
+                        if (operators.TryPeek(out char openBrack) && openBrack == '(')
+                            operators.Pop();
+                        else
+                            return new FormulaError("Expected '(' not found.");
+                    }
+                    else if (operators.TryPeek(out char openBrack) && openBrack == '(')
+                    {
+                        if (!(error is null))
+                            return error;
+                        operators.Pop();
+                    }
+
+                    //If * or / is on operator stack
+                    MiniEquate(values, operators, false, ref error);
+                    if (!(error is null))
+                        return error;
+                }
+                //Otherwise, throw exception
+                else
+                    return new FormulaError("Invalid token found");
+            }
+            //If operator stack is empty
+            if (operators.Count == 0 && values.Count == 1)
+                return values.Pop();
+
+            //If operator stack is not empty
+            else if (operators.Count == 1 && (operators.Peek() == '+' || operators.Peek() == '-') && values.Count == 2)
+            {
+                double temp =  Solve(values.Pop(), values.Pop(), operators.Pop(), ref error);
+                if (!(error is null))
+                    return error;
+                else
+                    return temp;
+            }
+            else
+                return new FormulaError("Invalid expression, unable to compelete operation.");
+        }
+
+        /// <summary>
+        /// Gets numbers and operator to find result
+        /// </summary>
+        /// <param name="num2">Second number of equation</param>
+        /// <param name="num1">First number of equation</param>
+        /// <param name="oper">Operator to be applied to nums</param>
+        /// <exception cref="System.ArgumentException">Thrown when trying to divide by zero</exception>
+        /// <returns>Value found from the equation</returns>
+        private static double Solve(double num2, double num1, char oper, ref object error)
+        {
+            switch (oper)
+            {
+                case '+':
+                    return num1 + num2;
+
+                case '-':
+                    return num1 - num2;
+
+                case '*':
+                    return num1 * num2;
+
+                case '/':
+                    if (num2 == 0)
+                    {
+                        error = new FormulaError("Attempted to divide by zero.");
+                        return 0;
+                    }
+                    else
+                        return num1 / num2;
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// Adds, subtracts, multiply, or divide when called
+        /// </summary>
+        /// <param name="values">Values stack to be used</param>
+        /// <param name="operators">Operators stack to be used</param>
+        /// <param name="addSub">Tells method if equating addition and subtraction or multiplication and division</param>
+        /// <exception cref="System.ArgumentException">Thrown when value stack does not have enough values</exception>
+        /// <returns>If operation was successful</returns>
+        private static bool MiniEquate(Stack<double> values, Stack<char> operators, bool addSub, ref object error)
+        {
+            if (addSub)
+            {
+                //If + or - on operator stack
+                if (operators.TryPeek(out char c1) && (c1 == '+' || c1 == '-'))
+                {
+                    //If 2+ values exist in values stack
+                    if (values.Count > 1)
+                    {
+                        values.Push(Solve(values.Pop(), values.Pop(), operators.Pop(), ref error));
+                        if (error is null)
+                            return true;
+                        else
+                            return false;
+
+                    }
+                    else
+                    {
+                        error = new FormulaError("Attempting to add or subtract with less than 2 values in the values stack.");
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                //Make sure value is on stack
+                if (!values.TryPop(out double num2))
+                {
+                    error = new FormulaError("Multiplication or division symbol found with insufficient values to equate.");
+                    return false;
+                }
+
+                //If * or / is on operator stack
+                if (operators.TryPeek(out char c) && (c == '*' || c == '/'))
+                {
+                    operators.Pop();
+                    //Pop value and do operand
+                    if (values.TryPeek(out double num1))
+                    {
+                        values.Push(Solve(num2, values.Pop(), c, ref error)); ;
+                        if (error is null)
+                            return true;
+                        else
+                            return false;
+                    }
+                    else
+                    {
+                        error = new FormulaError("Multiplication or division symbol found with insufficient values to equate.");
+                        return false;
+                    }
+
+                }
+                //Otherwise, just add to values stack
+                else
+                    values.Push(num2);
+            }
+            return false;
         }
 
         /// <summary>
