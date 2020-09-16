@@ -52,6 +52,10 @@ namespace SpreadsheetUtilities
 
         private string validVar = "^[a-zA-Z_]+[0-9a-zA-Z_]*$";
 
+        private string formulaString;
+
+        private List<string> variables;
+
         /// <summary>
         /// Creates a Formula from a string that consists of an infix expression written as
         /// described in the class comment.  If the expression is syntactically invalid,
@@ -89,6 +93,10 @@ namespace SpreadsheetUtilities
         /// </summary>
         public Formula(String formula, Func<string, string> normalize, Func<string, bool> isValid)
         {
+            //Initializes private fields
+            formulaString = "";
+            variables = new List<string>();
+
             //Creates tokens from formula
             tokens = GetTokens(formula).ToArray();
 
@@ -102,21 +110,19 @@ namespace SpreadsheetUtilities
             if (tokens.Length == 0)
                 throw new FormulaFormatException("No tokens found in formula. Check formula input.");
 
-            //Check if first string is valid
+            //Check if first token is valid
             double throwaway;
-            if (!Double.TryParse(tokens[0], out throwaway) && !Double.TryParse(tokens[0], System.Globalization.NumberStyles.Float, null, out throwaway) && !Regex.IsMatch(tokens[0], validVar) && !tokens[0].Equals("("))
+            if (!Double.TryParse(tokens[0], out throwaway) && !Regex.IsMatch(tokens[0], validVar) && !tokens[0].Equals("("))
                 throw new FormulaFormatException("The first token of the given string is invalid. Check formula input.");
 
             //Goes through tokens, ensuring all are valid and normalizing necessary variables
             int openParentheses = 0;
-            if (tokens[0].Equals("("))
-                openParentheses++;
             int closeParentheses = 0;
             for (int i = 0; i < tokens.Length; i++)
             {
                 //Check if invalid token
                 string current = tokens[i];
-                if (!Double.TryParse(current, out throwaway) && !Double.TryParse(current, System.Globalization.NumberStyles.Float, null, out throwaway) && !Regex.IsMatch(current, validVar) && !current.Equals("(") && !current.Equals(")") && !isOperator(current))
+                if (!Double.TryParse(current, out throwaway) && !Regex.IsMatch(current, validVar) && !current.Equals("(") && !current.Equals(")") && !isOperator(current))
                 {
                     throw new FormulaFormatException("Invalid token given. Check token at index " + i + " in the formula input.");
                 }
@@ -124,11 +130,13 @@ namespace SpreadsheetUtilities
                 //Checks if var, then normalizes and reassign var, then check if valid
                 if (Regex.IsMatch(current, validVar))
                 {
-                    tokens[i] = normalize(current);
                     current = normalize(current);
+                    tokens[i] = current;
 
                     if (!isValid(current))
                         throw new FormulaFormatException("Variable is not valid according to isValid delegate. Check to make sure token at index " + i + " is a valid variable");
+
+                    variables.Add(current);
                 }
 
                 //Check if parenthesis, increment accordingly, and make sure leftParentheses < rightParentheses
@@ -140,19 +148,20 @@ namespace SpreadsheetUtilities
                 //Check if open parenthesis or operator, then makes sure next token is number, var, or opening parenthesis
                 if (current.Equals("(") || isOperator(current))
                 {
-                    if (i < tokens.Length - 2)
+                    if (i == tokens.Length - 1)
                         throw new FormulaFormatException("Formula ends with open parenthesis or operator. Check formula input.");
-                    if (!Double.TryParse(tokens[i + 1], out throwaway) && !Double.TryParse(tokens[i + 1], System.Globalization.NumberStyles.Float, null, out throwaway) && !Regex.IsMatch(tokens[i + 1], validVar) && !tokens[i + 1].Equals("("))
+                    if (!Double.TryParse(tokens[i + 1], out throwaway) && !Regex.IsMatch(tokens[i + 1], validVar) && !tokens[i + 1].Equals("("))
                     {
                         throw new FormulaFormatException("Invalid token follows open parenthesis or operator. Check to make sure token at index " + (i + 1) + " is a number, variable, or open parenthesis.");
                     }
                 }
 
                 //Check if number and varifies token afterwards is operator or closing parenthesis. And reassign token to toString'ed version of parsed double.
-                if (Double.TryParse(current, out throwaway) || Double.TryParse(current, System.Globalization.NumberStyles.Float, null, out throwaway))
+                if (Double.TryParse(current, out throwaway))
                 {
-                    tokens[i] = throwaway.ToString();
-                    if (i >= tokens.Length - 2)
+                    current = throwaway.ToString();
+                    tokens[i] = current;
+                    if (i < tokens.Length - 1)
                         if (!tokens[i + 1].Equals(")") && !isOperator(tokens[i + 1]))
                             throw new FormulaFormatException("Invalid token follows number. Check to make sure token at index " + (i + 1) + " is closing parenthesis or operator.");
                 }
@@ -160,14 +169,17 @@ namespace SpreadsheetUtilities
                 //Check if var or closing parenthesis and varifies token afterwards is operator or closing parenthesis
                 if (Regex.IsMatch(current, validVar) || current.Equals(")"))
                 {
-                    if (i >= tokens.Length - 2)
+                    if (i < tokens.Length - 1)
                         if (!tokens[i + 1].Equals(")") && !isOperator(tokens[i + 1]))
                             throw new FormulaFormatException("Invalid token follows variable or closing parenthesis. Check to make sure token at index " + (i + 1) + " is closing parenthesis or operator.");
                 }
+
+                //Add token to formula's toString()
+                formulaString += current;
             }
 
             //Check if final token was valid
-            if (!Double.TryParse(tokens[tokens.Length - 1], out throwaway) && !Double.TryParse(tokens[tokens.Length - 1], System.Globalization.NumberStyles.Float, null, out throwaway) && !Regex.IsMatch(tokens[tokens.Length - 1], validVar) && !tokens[tokens.Length - 1].Equals(")"))
+            if (!Double.TryParse(tokens[tokens.Length - 1], out throwaway) && !Regex.IsMatch(tokens[tokens.Length - 1], validVar) && !tokens[tokens.Length - 1].Equals(")"))
                 throw new FormulaFormatException("The final token of the given string is invalid. Check formula input.");
 
             //Check if parentheses are equal
@@ -416,11 +428,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public IEnumerable<String> GetVariables()
         {
-            HashSet<string> result = new HashSet<string>();
-            for (int i = 0; i < tokens.Length; i++)
-                if (Regex.IsMatch(tokens[i], validVar))
-                    result.Add(tokens[i]);
-            return result;
+            return variables;
         }
 
         /// <summary>
@@ -435,10 +443,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public override string ToString()
         {
-            string result = "";
-            for (int i = 0; i < tokens.Length; i++)
-                result += tokens[i];
-            return result;
+            return formulaString;
         }
 
         /// <summary>
@@ -467,29 +472,7 @@ namespace SpreadsheetUtilities
             if (tokens.Length != compare.tokens.Length)
                 return false;
 
-            return this.ToString() == compare.ToString();
-
-            ////Go through tokens to make sure all are equal
-            //for(int i = 0; i < tokens.Length; i++)
-            //{
-            //    //If token is double
-            //    if (Double.TryParse(tokens[i], out double tempFirst) || Double.TryParse(tokens[i], System.Globalization.NumberStyles.Float, null, out tempFirst))
-            //    {
-            //        if (Double.TryParse(compare.tokens[i], out double tempSecond) || Double.TryParse(compare.tokens[i], System.Globalization.NumberStyles.Float, null, out tempSecond))
-            //            if (tempFirst.ToString() != tempSecond.ToString())
-            //                return false;
-            //            else
-            //                continue;
-            //        else
-            //            return false;
-            //    }
-            //    //Otherwise
-            //    else if ((tokens[i].Equals(compare.tokens[i])))
-            //        continue;
-            //    else
-            //        return false;
-            //}
-            //return true;
+            return this.formulaString == compare.formulaString;
         }
 
         /// <summary>
@@ -523,7 +506,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public override int GetHashCode()
         {
-            return this.ToString().GetHashCode();
+            return formulaString.GetHashCode();
         }
 
         /// <summary>
