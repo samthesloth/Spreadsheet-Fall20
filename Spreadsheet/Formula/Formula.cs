@@ -18,12 +18,11 @@
 //
 // Author: Sam Peters
 
+using ExtensionMethods;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Text.RegularExpressions;
-using ExtensionMethods;
 
 namespace SpreadsheetUtilities
 {
@@ -220,7 +219,7 @@ namespace SpreadsheetUtilities
             {
                 error = null;
                 //If s is a double
-                if (Double.TryParse(s, out double tempDouble) || Double.TryParse(s, System.Globalization.NumberStyles.Float, null, out tempDouble))
+                if (Double.TryParse(s, out double tempDouble))
                 {
                     //Adds num2 to values for helper method
                     values.Push(tempDouble);
@@ -259,12 +258,8 @@ namespace SpreadsheetUtilities
                     operators.Push(c2);
                 }
 
-                //If s is * or /
-                else if (char.TryParse(s, out tempChar) && (tempChar == '*' || tempChar == '/'))
-                    operators.Push(tempChar);
-
-                //If s is (
-                else if (char.TryParse(s, out tempChar) && tempChar == '(')
+                //If s is *, /, or (
+                else if (char.TryParse(s, out tempChar) && (tempChar == '*' || tempChar == '/' || tempChar == '('))
                     operators.Push(tempChar);
 
                 //If s is )
@@ -278,8 +273,6 @@ namespace SpreadsheetUtilities
                         //Make sure ( is next in stack
                         if (operators.TryPeek(out char openBrack) && openBrack == '(')
                             operators.Pop();
-                        else
-                            return new FormulaError("Expected '(' not found.");
                     }
                     else if (operators.TryPeek(out char openBrack) && openBrack == '(')
                     {
@@ -305,7 +298,7 @@ namespace SpreadsheetUtilities
             else if (operators.Count == 1 && (operators.Peek() == '+' || operators.Peek() == '-') && values.Count == 2)
             {
                 error = null;
-                double temp =  Solve(values.Pop(), values.Pop(), operators.Pop(), ref error);
+                double temp = Solve(values.Pop(), values.Pop(), operators.Pop(), ref error);
                 if (!(error is null))
                     return error;
                 else
@@ -363,31 +356,16 @@ namespace SpreadsheetUtilities
                 //If + or - on operator stack
                 if (operators.TryPeek(out char c1) && (c1 == '+' || c1 == '-'))
                 {
-                    //If 2+ values exist in values stack
-                    if (values.Count > 1)
-                    {
-                        values.Push(Solve(values.Pop(), values.Pop(), operators.Pop(), ref error));
-                        if (error is null)
-                            return true;
-                        else
-                            return false;
-                    }
+                    values.Push(Solve(values.Pop(), values.Pop(), operators.Pop(), ref error));
+                    if (error is null)
+                        return true;
                     else
-                    {
-                        error = new FormulaError("Attempting to add or subtract with less than 2 values in the values stack.");
                         return false;
-                    }
                 }
             }
             else
             {
-                //Make sure value is on stack
-                if (!values.TryPop(out double num2))
-                {
-                    error = new FormulaError("Multiplication or division symbol found with insufficient values to equate.");
-                    return false;
-                }
-
+                double num2 = values.Pop();
                 //If * or / is on operator stack
                 if (operators.TryPeek(out char c) && (c == '*' || c == '/'))
                 {
@@ -401,12 +379,6 @@ namespace SpreadsheetUtilities
                         else
                             return false;
                     }
-                    else
-                    {
-                        error = new FormulaError("Multiplication or division symbol found with insufficient values to equate.");
-                        return false;
-                    }
-
                 }
                 //Otherwise, just add to values stack
                 else
@@ -468,7 +440,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public override bool Equals(object obj)
         {
-            Formula compare = (Formula) obj;
+            Formula compare = (Formula)obj;
             if (tokens.Length != compare.tokens.Length)
                 return false;
 
@@ -588,11 +560,22 @@ namespace SpreadsheetUtilities
 
 namespace ExtensionMethods
 {
+    /// <summary>
+    /// Class to hold extension methods for stack. Methods are TryPeek and TryPop, equivalent to stack's methods with the same names.
+    /// </summary>
     public static class MyExtensions
     {
+        /// <summary>
+        /// Returns whether there is something in the stack. If there is, also uses out to return what the item is.
+        /// </summary>
+        /// <typeparam name="T">Generic type for given stack</typeparam>
+        /// <param name="stack">Stack used in method call</param>
+        /// <param name="result">Top item of stack if applicable</param>
+        /// <returns>True if at least one item is in stack, false if stack is empty</returns>
         public static bool TryPeek<T>(this Stack<T> stack, out T result)
         {
-            if (stack.Count > 0) {
+            if (stack.Count > 0)
+            {
                 result = stack.Peek();
                 return true;
             }
@@ -600,6 +583,13 @@ namespace ExtensionMethods
             return false;
         }
 
+        /// <summary>
+        /// Returns whether there is something in the stack. If there is, also uses out to return what the item is. Then removes item from stack.
+        /// </summary>
+        /// <typeparam name="T">Generic type for given stack</typeparam>
+        /// <param name="stack">Stack used in method call</param>
+        /// <param name="result">Top item of stack if applicable</param>
+        /// <returns>True if at least one item is in stack, false if stack is empty</returns>
         public static bool TryPop<T>(this Stack<T> stack, out T result)
         {
             if (stack.Count > 0)

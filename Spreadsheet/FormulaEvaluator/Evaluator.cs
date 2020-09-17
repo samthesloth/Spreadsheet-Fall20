@@ -53,7 +53,7 @@ namespace FormulaEvaluator
                 {
                     //Adds num2 to values for helper method
                     values.Push(tempInt);
-                    
+
                     MiniEquate(values, operators, false);
                 }
 
@@ -95,7 +95,7 @@ namespace FormulaEvaluator
                 else if (char.TryParse(s, out tempChar) && tempChar == ')')
                 {
                     //If + or - is at top of operator stack
-                    if(MiniEquate(values, operators, true))
+                    if (MiniEquate(values, operators, true))
                     {
                         //Make sure ( is next in stack
                         if (operators.TryPeek(out char openBrack) && openBrack == '(')
@@ -165,7 +165,7 @@ namespace FormulaEvaluator
         /// <returns>If operation was successful</returns>
         private static bool MiniEquate(Stack<int> values, Stack<char> operators, bool addSub)
         {
-            if(addSub)
+            if (addSub)
             {
                 //If + or - on operator stack
                 if (operators.TryPeek(out char c1) && (c1 == '+' || c1 == '-'))
