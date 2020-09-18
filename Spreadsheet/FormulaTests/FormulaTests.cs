@@ -2,6 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SpreadsheetUtilities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace FormulaTests
 {
@@ -66,6 +67,46 @@ namespace FormulaTests
             Assert.AreEqual(f.GetHashCode(), g.GetHashCode());
         }
 
+        [TestMethod]
+        public void NullNormalizerAndValidator()
+        {
+            Formula f = new Formula("A + 5      - 2.00", null, null);
+            Formula g = new Formula("A+5-2");
+            Assert.IsTrue(f == g);
+        }
+
+        [TestMethod]
+        public void EqualityWithBothNull()
+        {
+            Formula f = null;
+            Formula g = null;
+            Assert.IsTrue(f == g);
+        }
+
+        [TestMethod]
+        public void EqualityWithFirstNull()
+        {
+            Formula f = null;
+            Formula g = new Formula("5 + 2");
+            Assert.IsFalse(f == g);
+        }
+
+        [TestMethod]
+        public void EqualityWithSecondNull()
+        {
+            Formula f = null;
+            Formula g = new Formula("5 + 2");
+            Assert.IsFalse(g == f);
+        }
+
+        [TestMethod]
+        public void SimpleInequalityWithDifferentLengths()
+        {
+            Formula f = new Formula("5 + 2 + 1");
+            Formula g = new Formula("5 + 2");
+            Assert.IsFalse(f.Equals(g));
+        }
+
         /// <summary>
         /// Formula format exception tests
         /// </summary>
@@ -74,6 +115,13 @@ namespace FormulaTests
         public void SimpleInvalidTokenWithNum()
         {
             Formula f = new Formula("5!");
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(FormulaFormatException))]
+        public void SimpleInvalidTokenAsSecondToken()
+        {
+            Formula f = new Formula("!");
         }
 
         [TestMethod]
@@ -181,6 +229,20 @@ namespace FormulaTests
             Formula f = new Formula("(1 + 2 + 3) 4");
         }
 
+        [TestMethod]
+        [ExpectedException(typeof(FormulaFormatException))]
+        public void NotValidVar()
+        {
+            Formula f = new Formula("A5 + 2", s=>s.ToLower(), s=>s.Any(char.IsUpper));
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(FormulaFormatException))]
+        public void ParenthesisNotEqualAtEnd()
+        {
+            Formula f = new Formula("(A5+A+(5)");
+        }
+
         /// <summary>
         /// Formula error tests
         /// </summary>
@@ -194,10 +256,27 @@ namespace FormulaTests
         {
             if (s.Equals("A"))
                 return 1.0;
+            else if (s.Equals("X"))
+                return 0.0;
             else if (s.Equals("a"))
                 return 10.0;
             else
                 throw new ArgumentException();
+        }
+
+        [TestMethod]
+        public void DivideByZeroWithVar()
+        {
+            Assert.IsInstanceOfType(new Formula("5 / X").Evaluate(lookup), typeof(FormulaError));
+        }
+
+        [TestMethod()]
+        public void ClosingParenthesisDivideByZero()
+        {
+            Formula f = new Formula("(2+6)/0");
+            FormulaError e = (FormulaError)f.Evaluate(s => 0.0);
+            Assert.AreEqual("Attempted to divide by zero.", e.Reason);
+            Assert.IsInstanceOfType(new Formula("(2+6)/0").Evaluate(s => 0.0), typeof(FormulaError));
         }
 
         [TestMethod]

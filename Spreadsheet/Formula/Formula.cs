@@ -121,7 +121,7 @@ namespace SpreadsheetUtilities
             {
                 //Check if invalid token
                 string current = tokens[i];
-                if (!Double.TryParse(current, out throwaway) && !Regex.IsMatch(current, validVar) && !current.Equals("(") && !current.Equals(")") && !isOperator(current))
+                if (i > 0 && !Double.TryParse(current, out throwaway) && !Regex.IsMatch(current, validVar) && !current.Equals("(") && !current.Equals(")") && !isOperator(current))
                 {
                     throw new FormulaFormatException("Invalid token given. Check token at index " + i + " in the formula input.");
                 }
@@ -253,8 +253,6 @@ namespace SpreadsheetUtilities
                 {
                     char c2 = tempChar;
                     MiniEquate(values, operators, true, ref error);
-                    if (!(error is null))
-                        return error;
                     operators.Push(c2);
                 }
 
@@ -268,16 +266,12 @@ namespace SpreadsheetUtilities
                     //If + or - is at top of operator stack
                     if (MiniEquate(values, operators, true, ref error))
                     {
-                        if (!(error is null))
-                            return error;
                         //Make sure ( is next in stack
                         if (operators.TryPeek(out char openBrack) && openBrack == '(')
                             operators.Pop();
                     }
                     else if (operators.TryPeek(out char openBrack) && openBrack == '(')
                     {
-                        if (!(error is null))
-                            return error;
                         operators.Pop();
                     }
 
@@ -286,9 +280,6 @@ namespace SpreadsheetUtilities
                     if (!(error is null))
                         return error;
                 }
-                //Otherwise, throw exception
-                else
-                    return new FormulaError("Invalid token found");
             }
             //If operator stack is empty
             if (operators.Count == 0 && values.Count == 1)
@@ -299,13 +290,9 @@ namespace SpreadsheetUtilities
             {
                 error = null;
                 double temp = Solve(values.Pop(), values.Pop(), operators.Pop(), ref error);
-                if (!(error is null))
-                    return error;
-                else
-                    return temp;
+                return temp;
             }
-            else
-                return new FormulaError("Invalid expression, unable to compelete operation.");
+            return new FormulaError("Invalid expression, unable to compelete operation.");
         }
 
         /// <summary>
@@ -357,10 +344,7 @@ namespace SpreadsheetUtilities
                 if (operators.TryPeek(out char c1) && (c1 == '+' || c1 == '-'))
                 {
                     values.Push(Solve(values.Pop(), values.Pop(), operators.Pop(), ref error));
-                    if (error is null)
-                        return true;
-                    else
-                        return false;
+                    return true;
                 }
             }
             else
@@ -376,8 +360,6 @@ namespace SpreadsheetUtilities
                         values.Push(Solve(num2, values.Pop(), c, ref error)); ;
                         if (error is null)
                             return true;
-                        else
-                            return false;
                     }
                 }
                 //Otherwise, just add to values stack
@@ -561,9 +543,9 @@ namespace SpreadsheetUtilities
 namespace ExtensionMethods
 {
     /// <summary>
-    /// Class to hold extension methods for stack. Methods are TryPeek and TryPop, equivalent to stack's methods with the same names.
+    /// Class to hold extension method for stack. Methods are TryPeek, equivalent to stack's method with the same name.
     /// </summary>
-    public static class MyExtensions
+    internal static class MyExtensions
     {
         /// <summary>
         /// Returns whether there is something in the stack. If there is, also uses out to return what the item is.
@@ -577,24 +559,6 @@ namespace ExtensionMethods
             if (stack.Count > 0)
             {
                 result = stack.Peek();
-                return true;
-            }
-            result = default(T);
-            return false;
-        }
-
-        /// <summary>
-        /// Returns whether there is something in the stack. If there is, also uses out to return what the item is. Then removes item from stack.
-        /// </summary>
-        /// <typeparam name="T">Generic type for given stack</typeparam>
-        /// <param name="stack">Stack used in method call</param>
-        /// <param name="result">Top item of stack if applicable</param>
-        /// <returns>True if at least one item is in stack, false if stack is empty</returns>
-        public static bool TryPop<T>(this Stack<T> stack, out T result)
-        {
-            if (stack.Count > 0)
-            {
-                result = stack.Pop();
                 return true;
             }
             result = default(T);
