@@ -7,8 +7,13 @@ namespace Playground
     {
         static void Main(string[] args)
         {
-            Console.WriteLine(Double.Parse("2.0").ToString());
+            Console.WriteLine(testmethod(2.0));
             Console.Read();
+        }
+
+        private static bool testmethod(object o)
+        {
+            return (o is double);
         }
     }
 }
