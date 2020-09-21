@@ -55,7 +55,7 @@ namespace SS
         internal static DependencyGraph graph;
 
         /// <summary>
-        /// TODO : what does constructor do?
+        /// Creates spreadsheet class, initializing the dictionary for names of cells and the actual cells, as well as the dependency graph to hold the dependencies of cells.
         /// </summary>
         public Spreadsheet()
         {
@@ -107,7 +107,9 @@ namespace SS
                 throw new InvalidNameException();
             }
 
-            throw new NotImplementedException();
+            sheet[name].contents = number;
+
+            return (IList<string>)GetCellsToRecalculate(name);
         }
 
         /// <summary>
@@ -124,7 +126,17 @@ namespace SS
         /// </summary>
         public override IList<string> SetCellContents(string name, string text)
         {
-            throw new NotImplementedException();
+            if (text is null)
+                throw new ArgumentNullException();
+
+            if (name is null || !Regex.IsMatch(name, "^[a-zA-Z_]+[0-9a-zA-Z_]*$"))
+            {
+                throw new InvalidNameException();
+            }
+
+            sheet[name].contents = text;
+
+            return (IList<string>)GetCellsToRecalculate(name);
         }
 
         /// <summary>
@@ -144,7 +156,17 @@ namespace SS
         /// </summary>
         public override IList<string> SetCellContents(string name, Formula formula)
         {
-            throw new NotImplementedException();
+            if (formula is null)
+                throw new ArgumentNullException();
+
+            if (name is null || !Regex.IsMatch(name, "^[a-zA-Z_]+[0-9a-zA-Z_]*$"))
+            {
+                throw new InvalidNameException();
+            }
+
+            sheet[name].contents = formula;
+
+            return (IList<string>)GetCellsToRecalculate(name);
         }
 
         /// <summary>
