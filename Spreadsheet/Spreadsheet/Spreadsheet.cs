@@ -3,6 +3,7 @@
 using SpreadsheetUtilities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace SS
@@ -74,8 +75,10 @@ namespace SS
             {
                 throw new InvalidNameException();
             }
-
-            return sheet[name].contents;
+            if (sheet.ContainsKey(name))
+                return sheet[name].contents;
+            else
+                return "";
         }
 
         /// <summary>
@@ -106,10 +109,12 @@ namespace SS
             {
                 throw new InvalidNameException();
             }
+            if (sheet.ContainsKey(name))
+                sheet[name].contents = number;
+            else
+                sheet.Add(name, new Cell(name, number));
 
-            sheet[name].contents = number;
-
-            return (IList<string>)GetCellsToRecalculate(name);
+            return GetCellsToRecalculate(name).ToList();
         }
 
         /// <summary>
@@ -134,9 +139,12 @@ namespace SS
                 throw new InvalidNameException();
             }
 
-            sheet[name].contents = text;
+            if (sheet.ContainsKey(name))
+                sheet[name].contents = text;
+            else
+                sheet.Add(name, new Cell(name, text));
 
-            return (IList<string>)GetCellsToRecalculate(name);
+            return GetCellsToRecalculate(name).ToList();
         }
 
         /// <summary>
@@ -164,9 +172,12 @@ namespace SS
                 throw new InvalidNameException();
             }
 
-            sheet[name].contents = formula;
+            if (sheet.ContainsKey(name))
+                sheet[name].contents = formula;
+            else
+                sheet.Add(name, new Cell(name, formula));
 
-            return (IList<string>)GetCellsToRecalculate(name);
+            return GetCellsToRecalculate(name).ToList();
         }
 
         /// <summary>
@@ -207,6 +218,7 @@ namespace SS
                     throw new InvalidNameException();
                 }
 
+                this.name = name;
                 contents = content;
                 if (contents is string)
                 {
@@ -221,7 +233,7 @@ namespace SS
                 else if(contents is Formula)
                 {
                     Formula f = (Formula)contents;
-                    value = f.Evaluate(null);
+                    value = f.Evaluate(s=>1);
                     foreach(string s in f.GetVariables())
                     {
                         graph.AddDependency(s, name);
@@ -239,9 +251,7 @@ namespace SS
                 if (o is null || !(o is Cell))
                     return false;
                 Cell other = (Cell)o;
-                if (name == other.name && contents == other.contents && value == other.value)
-                    return true;
-                return false;
+                return (name == other.name && contents == other.contents && value == other.value);
             }
 
             /// <summary>

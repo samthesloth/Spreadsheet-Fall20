@@ -135,7 +135,8 @@ namespace SpreadsheetUtilities
                     if (!isValid(current))
                         throw new FormulaFormatException("Variable is not valid according to isValid delegate. Check to make sure token at index " + i + " is a valid variable");
 
-                    variables.Add(current);
+                    if(!variables.Contains(current))
+                        variables.Add(current);
                 }
 
                 //Check if parenthesis, increment accordingly, and make sure leftParentheses < rightParentheses
@@ -422,6 +423,8 @@ namespace SpreadsheetUtilities
         /// </summary>
         public override bool Equals(object obj)
         {
+            if (obj is null || !(obj is Formula))
+                return false;
             Formula compare = (Formula)obj;
             if (tokens.Length != compare.tokens.Length)
                 return false;
