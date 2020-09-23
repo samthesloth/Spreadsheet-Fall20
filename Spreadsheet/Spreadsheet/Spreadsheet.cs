@@ -56,7 +56,7 @@ namespace SS
         internal static DependencyGraph graph;
 
         /// <summary>
-        /// Creates spreadsheet class, initializing the dictionary for names of cells and the actual cells, as well as the dependency graph to hold the dependencies of cells.
+        /// Creates spreadsheet class, initializing the dictionary for names of cells and the actual cells, as well as the dependency graph to hold the dependencies of cells (by using their names.)
         /// </summary>
         public Spreadsheet()
         {
@@ -71,10 +71,13 @@ namespace SS
         /// value should be either a string, a double, or a Formula.
         public override object GetCellContents(string name)
         {
+            //If invalid, throw exception
             if (name is null || !Regex.IsMatch(name, "^[a-zA-Z_]+[0-9a-zA-Z_]*$"))
             {
                 throw new InvalidNameException();
             }
+
+            //Return contents or return empty string if cell does not exist
             if (sheet.ContainsKey(name))
                 return sheet[name].contents;
             else
@@ -86,6 +89,7 @@ namespace SS
         /// </summary>
         public override IEnumerable<string> GetNamesOfAllNonemptyCells()
         {
+            //Return each cell name in sheet, unless content is empty string (aka empty)
             foreach(String s in sheet.Keys)
             {
                 if (!sheet[s].contents.Equals(""))
@@ -105,16 +109,24 @@ namespace SS
         /// </summary>
         public override IList<string> SetCellContents(string name, double number)
         {
+            //Check if name is valid. Throws exception if not
             if (name is null || !Regex.IsMatch(name, "^[a-zA-Z_]+[0-9a-zA-Z_]*$"))
             {
                 throw new InvalidNameException();
             }
+
+            //Get cells that we need to recalculate (since the next few lines will change these by removing dependencies)
+            List<string> cellsToRecalculate = new List<string>(GetCellsToRecalculate(name));
+            //Replace dependees with empty list, since a double won't depend on anything
+            graph.ReplaceDependees(name, new List<string>());
+
+            //Set cell's contents to number. If nonexistent, make new cell
             if (sheet.ContainsKey(name))
                 sheet[name].contents = number;
             else
                 sheet.Add(name, new Cell(name, number));
 
-            return GetCellsToRecalculate(name).ToList();
+            return cellsToRecalculate;
         }
 
         /// <summary>
@@ -131,20 +143,26 @@ namespace SS
         /// </summary>
         public override IList<string> SetCellContents(string name, string text)
         {
+            //Check if text and name are valid. Throws exception if not
             if (text is null)
                 throw new ArgumentNullException();
-
             if (name is null || !Regex.IsMatch(name, "^[a-zA-Z_]+[0-9a-zA-Z_]*$"))
             {
                 throw new InvalidNameException();
             }
 
+            //Get cells that we need to recalculate (since the next few lines will change these by removing dependencies)
+            List<string> cellsToRecalculate = new List<string>(GetCellsToRecalculate(name));
+            //Replace dependees with empty list, since a string won't depend on anything
+            graph.ReplaceDependees(name, new List<string>());
+
+            //Set cell's contents to string. If nonexistent, make new cell
             if (sheet.ContainsKey(name))
                 sheet[name].contents = text;
             else
                 sheet.Add(name, new Cell(name, text));
 
-            return GetCellsToRecalculate(name).ToList();
+            return cellsToRecalculate;
         }
 
         /// <summary>
@@ -164,20 +182,30 @@ namespace SS
         /// </summary>
         public override IList<string> SetCellContents(string name, Formula formula)
         {
+            //Check if formula and name are valid. Throws exception if not
             if (formula is null)
                 throw new ArgumentNullException();
-
             if (name is null || !Regex.IsMatch(name, "^[a-zA-Z_]+[0-9a-zA-Z_]*$"))
             {
                 throw new InvalidNameException();
             }
 
+            //Get cells that we need to recalculate (since the next few lines will change these by removing dependencies)
+            List<string> cellsToRecalculate = new List<string>(GetCellsToRecalculate(name));
+            //Replace dependees with empty list, as to remove them to have new one's added later
+            graph.ReplaceDependees(name, new List<string>());
+
+            //Set cell's contents to formula. If nonexistent, make new cell
             if (sheet.ContainsKey(name))
                 sheet[name].contents = formula;
             else
                 sheet.Add(name, new Cell(name, formula));
 
-            return GetCellsToRecalculate(name).ToList();
+            //Add new dependees with new formula's variables
+            List<string> newDependees = new List<string>(formula.GetVariables());
+            graph.ReplaceDependees(name, newDependees);
+
+            return cellsToRecalculate;
         }
 
         /// <summary>
@@ -202,6 +230,7 @@ namespace SS
         /// Holds the information of each cell in order to be called in the spreadsheet methods. Contains contents and value. For more information, check Spreadsheet class comments
         /// </summary>
         private class Cell{
+            //Hold name, contents, and value of cell
             public string name;
             public object contents;
             public object value;
@@ -213,11 +242,13 @@ namespace SS
             /// <param name="content"></param>
             public Cell(string name, object content)
             {
+                //Check if name is valid. If not, throws exception
                 if (name is null || !Regex.IsMatch(name, "^[a-zA-Z_]+[0-9a-zA-Z_]*$"))
                 {
                     throw new InvalidNameException();
                 }
 
+                //Sets name and content. Then finds value based on type of content
                 this.name = name;
                 contents = content;
                 if (contents is string)

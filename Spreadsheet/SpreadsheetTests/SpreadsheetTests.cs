@@ -65,7 +65,7 @@ namespace SpreadsheetTests
         }
 
         [TestMethod]
-        public void SimplyDependencyCheckWithSetCellContents()
+        public void SimpleDependencyCheckWithSetCellContents()
         {
             AbstractSpreadsheet sheet = new Spreadsheet();
             sheet.SetCellContents("A1", 5.0);
@@ -73,12 +73,12 @@ namespace SpreadsheetTests
             sheet.SetCellContents("B2", new Formula("B1 + C2"));
             sheet.SetCellContents("A3", new Formula("B2 + 5"));
             sheet.SetCellContents("C2", new Formula("A1 + 1"));
-            List<string> list = sheet.SetCellContents("A1", 2.0).ToList();
-            foreach (string s in list)
-            {
-                System.Console.WriteLine(s);
-            }
-            System.Console.Read();
+            List<string> list = new List<string>(sheet.SetCellContents("A1", 2.0));
+            List<string> check1 = new List<string>();
+            List<string> check2 = new List<string>();
+            check1.Add("A1"); check1.Add("C2"); check1.Add("B1"); check1.Add("B2"); check1.Add("A3");
+            check2.Add("A1"); check2.Add("B1"); check2.Add("C2"); check2.Add("B2"); check2.Add("A3");
+            Assert.IsTrue(list.SequenceEqual(check1) || list.SequenceEqual(check2));
         }
     }
 }
