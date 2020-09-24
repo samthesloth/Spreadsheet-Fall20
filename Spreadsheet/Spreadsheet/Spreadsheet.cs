@@ -115,18 +115,20 @@ namespace SS
                 throw new InvalidNameException();
             }
 
-            //Get cells that we need to recalculate (since the next few lines will change these by removing dependencies)
-            List<string> cellsToRecalculate = new List<string>(GetCellsToRecalculate(name));
             //Replace dependees with empty list, since a double won't depend on anything
             graph.ReplaceDependees(name, new List<string>());
 
             //Set cell's contents to number. If nonexistent, make new cell
             if (sheet.ContainsKey(name))
+            {
                 sheet[name].contents = number;
+            }
             else
+            {
                 sheet.Add(name, new Cell(name, number));
+            }
 
-            return cellsToRecalculate;
+            return new List<string>(GetCellsToRecalculate(name));
         }
 
         /// <summary>
@@ -151,18 +153,20 @@ namespace SS
                 throw new InvalidNameException();
             }
 
-            //Get cells that we need to recalculate (since the next few lines will change these by removing dependencies)
-            List<string> cellsToRecalculate = new List<string>(GetCellsToRecalculate(name));
-            //Replace dependees with empty list, since a string won't depend on anything
+            //Replace dependees with empty list, since text won't depend on anything
             graph.ReplaceDependees(name, new List<string>());
 
-            //Set cell's contents to string. If nonexistent, make new cell
+            //Set cell's contents to text. If nonexistent, make new cell
             if (sheet.ContainsKey(name))
+            {
                 sheet[name].contents = text;
+            }
             else
+            {
                 sheet.Add(name, new Cell(name, text));
+            }
 
-            return cellsToRecalculate;
+            return new List<string>(GetCellsToRecalculate(name));
         }
 
         /// <summary>
@@ -190,20 +194,36 @@ namespace SS
                 throw new InvalidNameException();
             }
 
-            //Get cells that we need to recalculate (since the next few lines will change these by removing dependencies)
-            List<string> cellsToRecalculate = new List<string>(GetCellsToRecalculate(name));
-            //Replace dependees with empty list, as to remove them to have new one's added later
-            graph.ReplaceDependees(name, new List<string>());
+            //Replace dependees with empty list, since text won't depend on anything. Keeps backup in case of cycle
+            List<string> backupDependees = new List<string>(graph.GetDependees(name));
+            graph.ReplaceDependees(name, formula.GetVariables());
 
-            //Set cell's contents to formula. If nonexistent, make new cell
+            //Set cell's contents to text. If nonexistent, make new cell
+            object backupContents;
             if (sheet.ContainsKey(name))
+            {
+                backupContents = sheet[name].contents;
                 sheet[name].contents = formula;
+            }
             else
+            {
+                backupContents = "";
                 sheet.Add(name, new Cell(name, formula));
+            }
 
-            //Add new dependees with new formula's variables
-            List<string> newDependees = new List<string>(formula.GetVariables());
-            graph.ReplaceDependees(name, newDependees);
+            List<string> cellsToRecalculate;
+            try
+            {
+                //Get cells that we need to recalculate (since the next few lines will change these by removing dependencies)
+                cellsToRecalculate = new List<string>(GetCellsToRecalculate(name));
+            }
+            catch
+            {
+                //If cycle, set values and dependees back to original values, then throw cyclic exception
+                sheet[name].contents = backupContents;
+                graph.ReplaceDependees(name, backupDependees);
+                throw new CircularException();
+            }
 
             return cellsToRecalculate;
         }
@@ -242,83 +262,80 @@ namespace SS
             /// <param name="content"></param>
             public Cell(string name, object content)
             {
-                //Check if name is valid. If not, throws exception
-                if (name is null || !Regex.IsMatch(name, "^[a-zA-Z_]+[0-9a-zA-Z_]*$"))
-                {
-                    throw new InvalidNameException();
-                }
+                //We don't check for if name is valid b/c set cell methods do this for us
 
                 //Sets name and content. Then finds value based on type of content
                 this.name = name;
                 contents = content;
-                if (contents is string)
-                {
-                    value = contents;
-                }
+                value = 0;
+                //if (contents is string)
+                //{
+                //    value = contents;
+                //}
 
-                else if(contents is int)
-                {
-                    value = contents;
-                }
+                //else if(contents is int)
+                //{
+                //    value = contents;
+                //}
 
-                else if(contents is Formula)
-                {
-                    Formula f = (Formula)contents;
-                    value = f.Evaluate(s=>1);
-                    foreach(string s in f.GetVariables())
-                    {
-                        graph.AddDependency(s, name);
-                    }
-                }
+                //else if(contents is Formula)
+                //{
+                //    Formula f = (Formula)contents;
+                //    value = f.Evaluate(s=>1);
+                //    foreach(string s in f.GetVariables())
+                //    {
+                //        graph.AddDependency(s, name);
+                //    }
+                //}
             }
 
-            /// <summary>
-            /// Returns whether this cell is equal to o. If o is null or not a cell, returns false. Otherwise, returns true if the cells have the same name, contents, and value
-            /// </summary>
-            /// <param name="o">Object to be compared</param>
-            /// <returns>Whether they are equal or not</returns>
-            public override bool Equals(object o)
-            {
-                if (o is null || !(o is Cell))
-                    return false;
-                Cell other = (Cell)o;
-                return (name == other.name && contents == other.contents && value == other.value);
-            }
+            ///// <summary>
+            ///// Returns whether this cell is equal to o. If o is null or not a cell, returns false. Otherwise, returns true if the cells have the same name, contents, and value
+            ///// </summary>
+            ///// <param name="o">Object to be compared</param>
+            ///// <returns>Whether they are equal or not</returns>
+            //public override bool Equals(object o)
+            //{
+            //    if (o is null || !(o is Cell))
+            //        return false;
+            //    Cell other = (Cell)o;
+            //    return (name == other.name && contents == other.contents && value == other.value);
+            //}
 
-            /// <summary>
-            /// Returns whether the cells are equal, checking for null values as well. 
-            /// </summary>
-            /// <param name="c1">First item to be compared</param>
-            /// <param name="c2">Second item to be compared</param>
-            /// <returns></returns>
-            public static bool operator ==(Cell c1, Cell c2)
-            {
-                if (c1 is null && c2 is null)
-                    return true;
-                if ((c1 is null && !(c2 is null)) || (c2 is null && !(c1 is null)))
-                    return false;
-                return c1.Equals(c2);
-            }
+            ///// <summary>
+            ///// Returns whether the cells are equal, checking for null values as well. 
+            ///// </summary>
+            ///// <param name="c1">First item to be compared</param>
+            ///// <param name="c2">Second item to be compared</param>
+            ///// <returns></returns>
+            //public static bool operator ==(Cell c1, Cell c2)
+            //{
+            //    if (c1 is null && c2 is null)
+            //        return true;
+            //    if ((c1 is null && !(c2 is null)) || (c2 is null && !(c1 is null)))
+            //        return false;
+            //    return c1.Equals(c2);
+            //}
 
-            /// <summary>
-            /// Returns whether the cells are not equal, checking for null values as well. Calls the opposite of ==
-            /// </summary>
-            /// <param name="c1">First cell to be compared</param>
-            /// <param name="c2">Second cell to be compared</param>
-            /// <returns>Whether they are inequal or not</returns>
-            public static bool operator !=(Cell c1, Cell c2)
-            {
-                return !(c1 == c2);
-            }
+            ///// <summary>
+            ///// Returns whether the cells are not equal, checking for null values as well. Calls the opposite of ==
+            ///// </summary>
+            ///// <param name="c1">First cell to be compared</param>
+            ///// <param name="c2">Second cell to be compared</param>
+            ///// <returns>Whether they are inequal or not</returns>
+            //public static bool operator !=(Cell c1, Cell c2)
+            //{
+            //    return !(c1 == c2);
+            //}
 
-            /// <summary>
-            /// Returns the hashcode of the cell, which is the added hash codes of the name, contents, and value of the cell. 
-            /// </summary>
-            /// <returns>Hashcode of cell</returns>
-            public override int GetHashCode()
-            {
-                return name.GetHashCode() + contents.GetHashCode() + value.GetHashCode();
-            }
+            ///// <summary>
+            ///// Returns the hashcode of the cell, which is the added hash codes of the name, contents, and value of the cell. 
+            ///// </summary>
+            ///// <returns>Hashcode of cell</returns>
+            //public override int GetHashCode()
+            //{
+            //    return name.GetHashCode() + contents.GetHashCode() + value.GetHashCode();
+            //}
         }
     }
 }
