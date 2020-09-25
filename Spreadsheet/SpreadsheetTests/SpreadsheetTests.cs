@@ -4,15 +4,14 @@ using SS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 
 namespace SpreadsheetTests
 {
     [TestClass]
     public class SpreadsheetTests
     {
-
         #region Simple tests
+
         [TestMethod]
         public void GetContentsOfNonExistentCell()
         {
@@ -92,9 +91,11 @@ namespace SpreadsheetTests
             check2.Add("A1"); check2.Add("B1"); check2.Add("C2"); check2.Add("B2"); check2.Add("A3");
             Assert.IsTrue(list.SequenceEqual(check1) || list.SequenceEqual(check2));
         }
-        #endregion
+
+        #endregion Simple tests
 
         #region Exception tests
+
         /// <summary>
         /// GetCellContents exceptions
         /// </summary>
@@ -202,13 +203,67 @@ namespace SpreadsheetTests
             sheet.SetCellContents("C1", new Formula("A1 + 1"));
         }
 
-        #endregion
+        #endregion Exception tests
 
         #region Complicated Tests
 
+        //Taken from Geoffrey on Piazza to more closely examine the problem
+        [TestMethod]
+        public void SetCellWithSpecificOrder()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet();
+            Formula f1 = new Formula("A1*A1");
+            Formula f2 = new Formula("B1+A1");
+            Formula f3 = new Formula("B1-C1");
 
+            sheet.SetCellContents("A1", 3);
+            sheet.SetCellContents("B1", f1);
+            sheet.SetCellContents("C1", f2);
+            sheet.SetCellContents("D1", f3);
 
-        #endregion
+            List<string> test = new List<string>();
+            test.Add("D1");
+            Assert.IsTrue(test.SequenceEqual(sheet.SetCellContents("D1", f3)));
 
+            test.Clear(); test.Add("A1"); test.Add("B1"); test.Add("C1"); test.Add("D1");
+            Assert.IsTrue(test.SequenceEqual(sheet.SetCellContents("A1", 5.0)));
+        }
+
+        [TestMethod]
+        public void StressTest()
+        {
+            //Creates spreadsheet and list of strings (from a0 to z25) to create the sheet
+            AbstractSpreadsheet sheet = new Spreadsheet();
+            List<string> cellsToMake = new List<string>();
+            for (char c = 'a'; c <= 'z'; c++)
+            {
+                for (int i = 0; i < 26; i++)
+                {
+                    cellsToMake.Add("" + c + i);
+                }
+            }
+            //Adds z26, as this will be our cell we change
+            cellsToMake.Add("z26");
+
+            //Adds cells (except z26) to spreadsheet, having each depend on cell after it (a0 depends on a1, etc)
+            for (int i = 0; i < cellsToMake.Count - 1; i++)
+                sheet.SetCellContents(cellsToMake[i], new Formula(cellsToMake[i + 1]));
+
+            //Make new list that will be reverse of cellsToMake. This will be the list we expect to be returned when z26 is changed/set
+            List<string> check = new List<string>();
+            check.Add("z26");
+            for (char c = 'z'; c >= 'a'; c--)
+            {
+                for (int i = 25; i >= 0; i--)
+                {
+                    check.Add("" + c + i);
+                }
+            }
+
+            //Asserts if sequence of check equals list returned by SetCellContents of z26 to a double
+            Assert.IsTrue(check.SequenceEqual(sheet.SetCellContents("z26", 5.0)));
+        }
+
+        #endregion Complicated Tests
     }
 }

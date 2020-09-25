@@ -1,19 +1,19 @@
 ﻿using System;
-using System.Text.RegularExpressions;
 
 namespace Playground
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
-            Console.WriteLine(testmethod(2.0));
+            for (char c = 'a'; c <= 'z'; c++)
+            {
+                for (int i = 0; i < 26; i++)
+                {
+                    Console.WriteLine("" + c + i);
+                }
+            }
             Console.Read();
-        }
-
-        private static bool testmethod(object o)
-        {
-            return (o is double);
         }
     }
 }
