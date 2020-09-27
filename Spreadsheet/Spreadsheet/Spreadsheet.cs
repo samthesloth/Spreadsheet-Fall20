@@ -54,14 +54,31 @@ namespace SS
         private Dictionary<string, Cell> sheet;
         internal static DependencyGraph graph;
 
+
         /// <summary>
         /// Creates spreadsheet class, initializing the dictionary for names of cells and the actual cells, as well as the dependency graph to hold the dependencies of cells (by using their names.)
+        /// It also assigns the isValid and normalize delegates as well as the version string. 
         /// </summary>
-        public Spreadsheet()
+        public Spreadsheet() : this(n => true, n => n, "default")
         {
+        }
+
+        /// <summary>
+        /// Creates spreadsheet class, initializing the dictionary for names of cells and the actual cells, as well as the dependency graph to hold the dependencies of cells (by using their names.)
+        /// It also assigns the isValid and normalize delegates as well as the version string. 
+        /// </summary>
+        public Spreadsheet(Func<string, bool> isValid, Func<string, string> normalize, string version) : base(isValid, normalize, version)
+        {
+            if (isValid is null)
+                IsValid = s => true;
+            if (normalize is null)
+                Normalize = s => s;
+
             sheet = new Dictionary<string, Cell>();
             graph = new DependencyGraph();
         }
+
+        // TODO: ADD 4-PARAMETER CONSTRUCTOR WITH FILE PATH
 
         /// <summary>
         /// If name is null or invalid, throws an InvalidNameException.
@@ -70,7 +87,7 @@ namespace SS
         public override object GetCellContents(string name)
         {
             //If invalid, throw exception
-            if (name is null || !Regex.IsMatch(name, "^[a-zA-Z_]+[0-9a-zA-Z_]*$"))
+            if (name is null || !Regex.IsMatch(name, "^[a-zA-Z]+[0-9]+$"))
             {
                 throw new InvalidNameException();
             }
@@ -105,14 +122,8 @@ namespace SS
         /// For example, if name is A1, B1 contains A1*2, and C1 contains B1+A1, the
         /// list {A1, B1, C1} is returned.
         /// </summary>
-        public override IList<string> SetCellContents(string name, double number)
+        protected override IList<string> SetCellContents(string name, double number)
         {
-            //Check if name is valid. Throws exception if not
-            if (name is null || !Regex.IsMatch(name, "^[a-zA-Z_]+[0-9a-zA-Z_]*$"))
-            {
-                throw new InvalidNameException();
-            }
-
             //Replace dependees with empty list, since a double won't depend on anything
             graph.ReplaceDependees(name, new List<string>());
 
@@ -141,16 +152,8 @@ namespace SS
         /// For example, if name is A1, B1 contains A1*2, and C1 contains B1+A1, the
         /// list {A1, B1, C1} is returned.
         /// </summary>
-        public override IList<string> SetCellContents(string name, string text)
+        protected override IList<string> SetCellContents(string name, string text)
         {
-            //Check if text and name are valid. Throws exception if not
-            if (text is null)
-                throw new ArgumentNullException();
-            if (name is null || !Regex.IsMatch(name, "^[a-zA-Z_]+[0-9a-zA-Z_]*$"))
-            {
-                throw new InvalidNameException();
-            }
-
             //Replace dependees with empty list, since text won't depend on anything
             graph.ReplaceDependees(name, new List<string>());
 
@@ -182,16 +185,8 @@ namespace SS
         /// For example, if name is A1, B1 contains A1*2, and C1 contains B1+A1, the
         /// list {A1, B1, C1} is returned.
         /// </summary>
-        public override IList<string> SetCellContents(string name, Formula formula)
+        protected override IList<string> SetCellContents(string name, Formula formula)
         {
-            //Check if formula and name are valid. Throws exception if not
-            if (formula is null)
-                throw new ArgumentNullException();
-            if (name is null || !Regex.IsMatch(name, "^[a-zA-Z_]+[0-9a-zA-Z_]*$"))
-            {
-                throw new InvalidNameException();
-            }
-
             //Replace dependees with empty list, since text won't depend on anything. Keeps backup in case of cycle
             List<string> backupDependees = new List<string>(graph.GetDependees(name));
             graph.ReplaceDependees(name, formula.GetVariables());
@@ -245,6 +240,148 @@ namespace SS
         }
 
         /// <summary>
+        /// Returns the version information of the spreadsheet saved in the named file.
+        /// If there are any problems opening, reading, or closing the file, the method
+        /// should throw a SpreadsheetReadWriteException with an explanatory message.
+        /// </summary>
+        public override string GetSavedVersion(string filename)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Writes the contents of this spreadsheet to the named file using an XML format.
+        /// The XML elements should be structured as follows:
+        /// 
+        /// <spreadsheet version="version information goes here">
+        /// 
+        /// <cell>
+        /// <name>cell name goes here</name>
+        /// <contents>cell contents goes here</contents>    
+        /// </cell>
+        /// 
+        /// </spreadsheet>
+        /// 
+        /// There should be one cell element for each non-empty cell in the spreadsheet.  
+        /// If the cell contains a string, it should be written as the contents.  
+        /// If the cell contains a double d, d.ToString() should be written as the contents.  
+        /// If the cell contains a Formula f, f.ToString() with "=" prepended should be written as the contents.
+        /// 
+        /// If there are any problems opening, writing, or closing the file, the method should throw a
+        /// SpreadsheetReadWriteException with an explanatory message.
+        /// </summary>
+        public override void Save(string filename)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// If name is null or invalid, throws an InvalidNameException.
+        /// 
+        /// Otherwise, returns the value (as opposed to the contents) of the named cell.  The return
+        /// value should be either a string, a double, or a SpreadsheetUtilities.FormulaError.
+        /// </summary>
+        public override object GetCellValue(string name)
+        {
+            if (name is null || !Regex.IsMatch(name, "^[a-zA-Z]+[0-9]+$") || !IsValid(Normalize(name)) || !Regex.IsMatch(Normalize(name), "^[a-zA-Z]+[0-9]+$"))
+                throw new InvalidNameException();
+            name = Normalize(name);
+            return sheet[name].value;
+        }
+
+        /// <summary>
+        /// If content is null, throws an ArgumentNullException.
+        /// 
+        /// Otherwise, if name is null or invalid, throws an InvalidNameException.
+        /// 
+        /// Otherwise, if content parses as a double, the contents of the named
+        /// cell becomes that double.
+        /// 
+        /// Otherwise, if content begins with the character '=', an attempt is made
+        /// to parse the remainder of content into a Formula f using the Formula
+        /// constructor.  There are then three possibilities:
+        /// 
+        ///   (1) If the remainder of content cannot be parsed into a Formula, a 
+        ///       SpreadsheetUtilities.FormulaFormatException is thrown.
+        ///       
+        ///   (2) Otherwise, if changing the contents of the named cell to be f
+        ///       would cause a circular dependency, a CircularException is thrown,
+        ///       and no change is made to the spreadsheet.
+        ///       
+        ///   (3) Otherwise, the contents of the named cell becomes f.
+        /// 
+        /// Otherwise, the contents of the named cell becomes content.
+        /// 
+        /// If an exception is not thrown, the method returns a list consisting of
+        /// name plus the names of all other cells whose value depends, directly
+        /// or indirectly, on the named cell. The order of the list should be any
+        /// order such that if cells are re-evaluated in that order, their dependencies 
+        /// are satisfied by the time they are evaluated.
+        /// 
+        /// For example, if name is A1, B1 contains A1*2, and C1 contains B1+A1, the
+        /// list {A1, B1, C1} is returned.
+        /// </summary>
+        public override IList<string> SetContentsOfCell(string name, string content)
+        {
+            //List to be returned
+            List<string> list;
+
+            //Check if content isn't null, name is valid, and normalized name is valid. Then normalizes name
+            if (content is null)
+                throw new ArgumentNullException();
+            if (name is null || !Regex.IsMatch(name, "^[a-zA-Z]+[0-9]+$") || !IsValid(Normalize(name)) || !Regex.IsMatch(Normalize(name), "^[a-zA-Z]+[0-9]+$"))
+                throw new InvalidNameException();
+            name = Normalize(name);
+
+            //If content is double, make cell with double
+            if (double.TryParse(content, out double outDouble))
+                list = new List<string>(SetCellContents(name, outDouble));
+
+            //If content is formula, attempt to make cell with formula
+            else if (content[0] == '=')
+            {
+                Formula f;
+                try
+                {
+                    f = new Formula(content.Substring(1), Normalize, IsValid);
+                }
+                catch
+                {
+                    throw new SpreadsheetUtilities.FormulaFormatException("Invalid formula for cell " + name);
+                }
+                try
+                {
+                    list = new List<string>(SetCellContents(name, f));
+                }
+                catch
+                {
+                    throw new CircularException();
+                }
+            }
+
+            //If content is string, make cell with string
+            else
+            {
+                list = new List<string>(SetCellContents(name, content));
+            }
+
+            return list;
+        }
+
+        /// <summary>
+        /// True if this spreadsheet has been modified since it was created or saved                  
+        /// (whichever happened most recently); false otherwise.
+        /// </summary>
+        public override bool Changed { get => throw new NotImplementedException(); protected set => throw new NotImplementedException(); }
+
+        private double LookUp(string name)
+        {
+            return (double)GetCellValue(name);
+        }
+
+        private Func<string, double> convertedLookUp = LookUp;
+
+        /// <summary>
         /// Holds the information of each cell in order to be called in the spreadsheet methods. Contains contents and value. For more information, check Spreadsheet class comments
         /// </summary>
         private class Cell
@@ -268,74 +405,26 @@ namespace SS
                 this.name = name;
                 contents = content;
                 value = 0;
-                //if (contents is string)
-                //{
-                //    value = contents;
-                //}
+                if (contents is string)
+                {
+                    value = contents;
+                }
 
-                //else if(contents is int)
-                //{
-                //    value = contents;
-                //}
+                else if (contents is int)
+                {
+                    value = contents;
+                }
 
-                //else if(contents is Formula)
-                //{
-                //    Formula f = (Formula)contents;
-                //    value = f.Evaluate(s=>1);
-                //    foreach(string s in f.GetVariables())
-                //    {
-                //        graph.AddDependency(s, name);
-                //    }
-                //}
+                else if (contents is Formula)
+                {
+                    Formula f = (Formula)contents;
+                    value = f.Evaluate(LookUp);
+                    foreach (string s in f.GetVariables())
+                    {
+                        graph.AddDependency(s, name);
+                    }
+                }
             }
-
-            ///// <summary>
-            ///// Returns whether this cell is equal to o. If o is null or not a cell, returns false. Otherwise, returns true if the cells have the same name, contents, and value
-            ///// </summary>
-            ///// <param name="o">Object to be compared</param>
-            ///// <returns>Whether they are equal or not</returns>
-            //public override bool Equals(object o)
-            //{
-            //    if (o is null || !(o is Cell))
-            //        return false;
-            //    Cell other = (Cell)o;
-            //    return (name == other.name && contents == other.contents && value == other.value);
-            //}
-
-            ///// <summary>
-            ///// Returns whether the cells are equal, checking for null values as well.
-            ///// </summary>
-            ///// <param name="c1">First item to be compared</param>
-            ///// <param name="c2">Second item to be compared</param>
-            ///// <returns></returns>
-            //public static bool operator ==(Cell c1, Cell c2)
-            //{
-            //    if (c1 is null && c2 is null)
-            //        return true;
-            //    if ((c1 is null && !(c2 is null)) || (c2 is null && !(c1 is null)))
-            //        return false;
-            //    return c1.Equals(c2);
-            //}
-
-            ///// <summary>
-            ///// Returns whether the cells are not equal, checking for null values as well. Calls the opposite of ==
-            ///// </summary>
-            ///// <param name="c1">First cell to be compared</param>
-            ///// <param name="c2">Second cell to be compared</param>
-            ///// <returns>Whether they are inequal or not</returns>
-            //public static bool operator !=(Cell c1, Cell c2)
-            //{
-            //    return !(c1 == c2);
-            //}
-
-            ///// <summary>
-            ///// Returns the hashcode of the cell, which is the added hash codes of the name, contents, and value of the cell.
-            ///// </summary>
-            ///// <returns>Hashcode of cell</returns>
-            //public override int GetHashCode()
-            //{
-            //    return name.GetHashCode() + contents.GetHashCode() + value.GetHashCode();
-            //}
         }
     }
 }
