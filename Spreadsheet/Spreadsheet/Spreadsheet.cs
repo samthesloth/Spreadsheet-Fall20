@@ -3,7 +3,9 @@
 using SpreadsheetUtilities;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using System.Xml;
 
 namespace SS
 {
@@ -53,6 +55,8 @@ namespace SS
     {
         private Dictionary<string, Cell> sheet;
         internal static DependencyGraph graph;
+        private string version;
+        private string filepath;
 
 
         /// <summary>
@@ -69,16 +73,36 @@ namespace SS
         /// </summary>
         public Spreadsheet(Func<string, bool> isValid, Func<string, string> normalize, string version) : base(isValid, normalize, version)
         {
+            Changed = false;
+
             if (isValid is null)
                 IsValid = s => true;
             if (normalize is null)
                 Normalize = s => s;
 
+            this.version = version;
+
             sheet = new Dictionary<string, Cell>();
             graph = new DependencyGraph();
         }
 
-        // TODO: ADD 4-PARAMETER CONSTRUCTOR WITH FILE PATH
+        /// <summary>
+        /// Calls the 3-argument constructor while also adding the filepath to the program
+        /// </summary>
+        public Spreadsheet(string filepath, Func<string, bool> isValid, Func<string, string> normalize, string version) : this(isValid, normalize, version)
+        {
+            GetSavedVersion(filepath);
+        }
+
+        /// <summary>
+        /// True if this spreadsheet has been modified since it was created or saved                  
+        /// (whichever happened most recently); false otherwise.
+        /// </summary>
+        public override bool Changed
+        {
+            get;
+            protected set;
+        }
 
         /// <summary>
         /// If name is null or invalid, throws an InvalidNameException.
@@ -272,7 +296,58 @@ namespace SS
         /// </summary>
         public override void Save(string filename)
         {
-            throw new NotImplementedException();
+            Changed = false;
+
+            //Sets up xmlwriter
+            XmlWriterSettings settings = new XmlWriterSettings();
+            settings.Indent = true;
+            settings.IndentChars = "\t";
+
+            XmlWriter writer = null;
+
+            //Write file
+            try
+            {
+                writer = XmlWriter.Create(filename, settings);
+
+                //Top of document
+                writer.WriteStartDocument();
+                writer.WriteStartElement("Spreadsheet");
+                writer.WriteAttributeString("version", version);
+
+                //Cells
+                foreach (string s in GetNamesOfAllNonemptyCells())
+                {
+                    writer.WriteStartElement("Cell");
+                    writer.WriteStartElement("Name");
+                    writer.WriteString(s);
+                    writer.WriteEndElement();
+                    writer.WriteStartElement("Content");
+                    if (sheet[s].contents is double)
+                        writer.WriteString(sheet[s].contents.ToString());
+                    else if (sheet[s].contents is string)
+                        writer.WriteString(sheet[s].contents.ToString());
+                    else {
+                        Formula formulaContents = (Formula)sheet[s].contents;
+                        writer.WriteString("=" + formulaContents.ToString());
+                    }
+                    writer.WriteEndElement();
+                    writer.WriteEndElement();
+                }
+
+                //End
+                writer.WriteEndElement();
+                writer.WriteEndDocument();
+            }
+            catch
+            {
+                writer.Dispose();
+                throw new SpreadsheetReadWriteException("Problem saving xml file. Check if filename is valid");
+            }
+            finally
+            {
+                writer.Dispose();
+            }
         }
 
         /// <summary>
@@ -323,6 +398,8 @@ namespace SS
         /// </summary>
         public override IList<string> SetContentsOfCell(string name, string content)
         {
+            Changed = true;
+
             //List to be returned
             List<string> list;
 
@@ -347,16 +424,10 @@ namespace SS
                 }
                 catch
                 {
-                    throw new SpreadsheetUtilities.FormulaFormatException("Invalid formula for cell " + name);
+                    throw new FormulaFormatException("Invalid formula for cell " + name);
                 }
-                try
-                {
-                    list = new List<string>(SetCellContents(name, f));
-                }
-                catch
-                {
-                    throw new CircularException();
-                }
+
+                list = new List<string>(SetCellContents(name, f));
             }
 
             //If content is string, make cell with string
@@ -368,18 +439,15 @@ namespace SS
             return list;
         }
 
-        /// <summary>
-        /// True if this spreadsheet has been modified since it was created or saved                  
-        /// (whichever happened most recently); false otherwise.
-        /// </summary>
-        public override bool Changed { get => throw new NotImplementedException(); protected set => throw new NotImplementedException(); }
 
-        private double LookUp(string name)
+
+        private double lookup(string s)
         {
-            return (double)GetCellValue(name);
+            return (double)GetCellValue(s);
         }
 
-        private Func<string, double> convertedLookUp = LookUp;
+        private Func<string, double> converted = lookup;
+
 
         /// <summary>
         /// Holds the information of each cell in order to be called in the spreadsheet methods. Contains contents and value. For more information, check Spreadsheet class comments
@@ -391,6 +459,7 @@ namespace SS
 
             public object contents;
             public object value;
+
 
             /// <summary>
             /// Builds cell with designated contents, and then sets value according to what type the content is.
@@ -418,7 +487,7 @@ namespace SS
                 else if (contents is Formula)
                 {
                     Formula f = (Formula)contents;
-                    value = f.Evaluate(LookUp);
+                    value = f.Evaluate(lookup);
                     foreach (string s in f.GetVariables())
                     {
                         graph.AddDependency(s, name);
