@@ -357,7 +357,8 @@ namespace SS
 
 
     /// <summary>
-    /// A helper for the GetCellsToRecalculate method.
+    /// A helper for the GetCellsToRecalculate method. Uses depth-first search to ensure that a cycle was not created during the last change.
+    /// Aka, goes through all paths, if it finds first node again, throws circular exception.
     /// </summary>
     private void Visit(String start, String name, ISet<String> visited, LinkedList<String> changed)
     {
