@@ -1,4 +1,7 @@
 ﻿// Author: Sam Peters
+//Version 2.0 - 9/29/2020 - Implemented methods
+//Version 2.1 - 9/30/2020 - Added tests
+//Version 2.1.1 - 10/1/2020 - Added this header and other comments
 
 using SpreadsheetUtilities;
 using System;
@@ -52,7 +55,9 @@ namespace SS
     /// </summary>
     public class Spreadsheet : AbstractSpreadsheet
     {
+        //Dictionary to hold names of cells and actual cells
         private Dictionary<string, Cell> sheet;
+        //Graph that holds dependencies of cells by name
         internal static DependencyGraph graph;
 
         /// <summary>

@@ -3,6 +3,7 @@
 // Version 1.2 - Daniel Kopta
 //               (Clarified meaning of dependent and dependee.)
 //               (Clarified names in solution/project structure.)
+//
 // Everything after - Sam Peters
 
 using System;
@@ -150,10 +151,12 @@ namespace SpreadsheetUtilities
             CheckValid(s);
             CheckValid(t);
 
+            //If s already exists in dependents but doesn't contain t, add t
             if (dependents.ContainsKey(s) && !dependents[s].Contains(t))
             {
                 dependents[s].Add(t);
 
+                //Checks if t is in dependees and adds if necessary
                 if (dependees.ContainsKey(t))
                     dependees[t].Add(s);
                 else
@@ -164,11 +167,14 @@ namespace SpreadsheetUtilities
 
                 Size++;
             }
+
+            //If s doesn't exist in dependents, add it and then add t to it
             else if (!dependents.ContainsKey(s))
             {
                 dependents.Add(s, new HashSet<string>());
                 dependents[s].Add(t);
 
+                //If t is in dependees, adds s. Otherwise, adds to and then s to it
                 if (dependees.ContainsKey(t))
                     dependees[t].Add(s);
                 else
