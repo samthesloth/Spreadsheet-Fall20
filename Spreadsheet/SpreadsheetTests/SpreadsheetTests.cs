@@ -451,7 +451,7 @@ namespace SpreadsheetTests
                 {
                     //Top of document
                     writer.WriteStartDocument();
-                    writer.WriteStartElement("Spreadsheet");
+                    writer.WriteStartElement("spreadsheet");
 
                     //End
                     writer.WriteEndElement();
@@ -484,13 +484,13 @@ namespace SpreadsheetTests
                 {
                     //Makes doc
                     writer.WriteStartDocument();
-                    writer.WriteStartElement("Spreadsheet");
+                    writer.WriteStartElement("spreadsheet");
                     writer.WriteAttributeString("version", "default");
-                    writer.WriteStartElement("Cell");
-                    writer.WriteStartElement("Name");
+                    writer.WriteStartElement("cell");
+                    writer.WriteStartElement("name");
                     writer.WriteValue("%sdfg");
                     writer.WriteEndElement();
-                    writer.WriteStartElement("Contents");
+                    writer.WriteStartElement("contents");
                     writer.WriteValue("5.0");
                     writer.WriteEndElement();
                     writer.WriteEndElement();
@@ -537,7 +537,8 @@ namespace SpreadsheetTests
                 throw new SpreadsheetReadWriteException("Problem saving xml file. Check if filename is valid.");
             }
         }
-        #endregion
+
+        #endregion XML Helper Methods
 
         #endregion Exception tests
 

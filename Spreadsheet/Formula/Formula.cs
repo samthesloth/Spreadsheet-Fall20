@@ -138,7 +138,7 @@ namespace SpreadsheetUtilities
                     if (!isValid(current))
                         throw new FormulaFormatException("Variable is not valid according to isValid delegate. Check to make sure token at index " + i + " is a valid variable");
 
-                    if(!variables.Contains(current))
+                    if (!variables.Contains(current))
                         variables.Add(current);
                 }
 

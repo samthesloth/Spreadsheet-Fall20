@@ -3,6 +3,7 @@
 //Version 2.1 - 9/30/2020 - Finished implementation and added tests
 //Version 2.1.1 - 10/1/2020 - Added this header and other comments
 //Version 2.2 - 10/2/2020 - Added final tests to get full coverage, finalized implementation
+//Version 2.2.1 - 10/2/2020 - Codemaid'd files
 
 using SpreadsheetUtilities;
 using System;
@@ -58,6 +59,7 @@ namespace SS
     {
         //Dictionary to hold names of cells and actual cells
         private Dictionary<string, Cell> sheet;
+
         //Graph that holds dependencies of cells by name
         internal static DependencyGraph graph;
 
@@ -294,10 +296,10 @@ namespace SS
                     //Goes through xml until "Spreadsheet" is found
                     while (reader.Read())
                     {
-                        if (reader.Name == "Spreadsheet")
+                        if (reader.Name == "spreadsheet")
                         {
                             //If attribute is in cell, return version
-                            if(reader.AttributeCount == 1)
+                            if (reader.AttributeCount == 1)
                                 return reader.GetAttribute("version");
                         }
                     }
@@ -332,31 +334,35 @@ namespace SS
                     while (reader.Read())
                     {
                         //If start element, get version, name of cell, or contents of cell
-                        if(reader.IsStartElement())
+                        if (reader.IsStartElement())
                         {
-                            switch(reader.Name)
+                            switch (reader.Name)
                             {
-                                case ("Spreadsheet"):
+                                case ("spreadsheet"):
                                     if (reader.GetAttribute("version") != Version)
                                         throw new SpreadsheetReadWriteException("Version does not match version of given xml file.");
                                     break;
-                                case ("Cell"):
+
+                                case ("cell"):
                                     break;
-                                case ("Name"):
+
+                                case ("name"):
                                     reader.Read();
                                     tempName = reader.Value;
                                     break;
-                                case ("Contents"):
+
+                                case ("contents"):
                                     reader.Read();
                                     tempContents = reader.Value;
                                     break;
+
                                 default:
                                     throw new SpreadsheetReadWriteException("Invalid element found in XML file: " + reader.Name);
                             }
                         }
 
                         //If name and contents found, make cell
-                        if(!(tempName is null) && !(tempContents is null))
+                        if (!(tempName is null) && !(tempContents is null))
                         {
                             try
                             {
@@ -378,7 +384,7 @@ namespace SS
                     }
                 }
             }
-            catch(SpreadsheetReadWriteException e)
+            catch (SpreadsheetReadWriteException e)
             {
                 throw new SpreadsheetReadWriteException(e.Message);
             }
@@ -427,17 +433,17 @@ namespace SS
                 {
                     //Top of document
                     writer.WriteStartDocument();
-                    writer.WriteStartElement("Spreadsheet");
+                    writer.WriteStartElement("spreadsheet");
                     writer.WriteAttributeString("version", Version);
 
                     //Cells
                     foreach (string s in GetNamesOfAllNonemptyCells())
                     {
-                        writer.WriteStartElement("Cell");
-                        writer.WriteStartElement("Name");
+                        writer.WriteStartElement("cell");
+                        writer.WriteStartElement("name");
                         writer.WriteValue(s);
                         writer.WriteEndElement();
-                        writer.WriteStartElement("Contents");
+                        writer.WriteStartElement("contents");
                         if (sheet[s].contents is double)
                             writer.WriteValue(sheet[s].contents.ToString());
                         else if (sheet[s].contents is string)
@@ -560,9 +566,9 @@ namespace SS
         /// </summary>
         private void UpdateCells(IList<string> list)
         {
-            foreach(string s in list)
+            foreach (string s in list)
             {
-                if(sheet[s].contents is string)
+                if (sheet[s].contents is string)
                 {
                     sheet[s].value = sheet[s].contents;
                 }
@@ -578,7 +584,7 @@ namespace SS
         }
 
         /// <summary>
-        /// Looks up if sheet contains s. If it doesn't or if s's contents is a string, throws argument exception. Otherwise 
+        /// Looks up if sheet contains s. If it doesn't or if s's contents is a string, throws argument exception. Otherwise
         /// </summary>
         private double Lookup(string s)
         {
