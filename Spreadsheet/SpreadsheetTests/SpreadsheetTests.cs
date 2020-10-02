@@ -4,6 +4,7 @@ using SS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml;
 
 namespace SpreadsheetTests
 {
@@ -12,6 +13,9 @@ namespace SpreadsheetTests
     {
         #region Simple tests
 
+        /// <summary>
+        /// GetCellContents Test
+        /// </summary>
         [TestMethod]
         public void GetContentsOfNonExistentCell()
         {
@@ -44,20 +48,9 @@ namespace SpreadsheetTests
             Assert.AreEqual(new Formula("5 + 2"), sheet.GetCellContents("A1"));
         }
 
-        [TestMethod]
-        public void SimpleGetNamesOfNonEmptyCells()
-        {
-            AbstractSpreadsheet sheet = new Spreadsheet();
-            sheet.SetContentsOfCell("A1", "hi");
-            sheet.SetContentsOfCell("A2", "hii");
-            sheet.SetContentsOfCell("A3", "hiii");
-            sheet.SetContentsOfCell("A4", "hiiii");
-            sheet.SetContentsOfCell("A5", "hiiiii");
-            sheet.SetContentsOfCell("A1", "");
-
-            Assert.AreEqual(4, sheet.GetNamesOfAllNonemptyCells().Count());
-        }
-
+        /// <summary>
+        /// SetContents tests
+        /// </summary>
         [TestMethod]
         public void SetContentsThenSetEmptyThenCheckNonEmpty()
         {
@@ -77,6 +70,111 @@ namespace SpreadsheetTests
             Assert.AreEqual(new Formula("5+2"), sheet.GetCellContents("A1"));
         }
 
+        /// <summary>
+        /// GetValue tests
+        /// </summary>
+        [TestMethod]
+        public void EvaluateFormulaWithNonexistentVar()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet();
+            sheet.SetContentsOfCell("A1", "=B1");
+            Assert.IsTrue(sheet.GetCellValue("A1") is FormulaError);
+            sheet.SetContentsOfCell("B1", "5.0");
+            Assert.AreEqual(sheet.GetCellValue("B1"), sheet.GetCellValue("A1"));
+        }
+
+        [TestMethod]
+        public void GetValueNonexistentCell()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet();
+            Assert.AreEqual("", sheet.GetCellValue("a1"));
+        }
+
+        [TestMethod]
+        public void GetValueDouble()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet();
+            sheet.SetContentsOfCell("a1", "5.0");
+            Assert.AreEqual(5.0, sheet.GetCellValue("a1"));
+        }
+
+        [TestMethod]
+        public void GetValueString()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet();
+            sheet.SetContentsOfCell("a1", "hi");
+            Assert.AreEqual("hi", sheet.GetCellValue("a1"));
+        }
+
+        [TestMethod]
+        public void GetValueFormula()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet();
+            sheet.SetContentsOfCell("a1", "=(5.0 + 2 - 1) * 5");
+            sheet.SetContentsOfCell("a2", "=a1");
+            Assert.AreEqual(30.0, sheet.GetCellValue("a2"));
+        }
+
+        /// <summary>
+        /// Save, load, versioning tests
+        /// </summary>
+
+        [TestMethod]
+        public void ChangedWhenMadeSavedAndChanged()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet();
+            Assert.IsFalse(sheet.Changed);
+            sheet.SetContentsOfCell("A1", "5.0");
+            Assert.IsTrue(sheet.Changed);
+            sheet.Save("changed.txt");
+            Assert.IsFalse(sheet.Changed);
+            sheet.SetContentsOfCell("A1", "=5 + 2");
+            Assert.AreEqual(new Formula("5+2"), sheet.GetCellContents("A1"));
+            sheet.SetContentsOfCell("B2", "hi");
+            sheet.SetContentsOfCell("C1", "5.0");
+            sheet.Save("changed.txt");
+        }
+
+        [TestMethod]
+        public void FourArgumentConstructorWithNullDelegatesAndTestLoad()
+        {
+            AbstractSpreadsheet sheet1 = new Spreadsheet();
+            sheet1.SetContentsOfCell("A1", "=5 + 2");
+            sheet1.SetContentsOfCell("B2", "hi");
+            sheet1.SetContentsOfCell("C1", "5.0");
+            sheet1.Save("other.txt");
+            AbstractSpreadsheet sheet2 = new Spreadsheet("other.txt", null, null, "default");
+            Assert.AreEqual(new Formula("5+2"), sheet2.GetCellContents("A1"));
+            Assert.AreEqual("hi", sheet2.GetCellContents("B2"));
+            Assert.AreEqual(5.0, sheet2.GetCellContents("C1"));
+        }
+
+        [TestMethod]
+        public void CheckingVersion()
+        {
+            AbstractSpreadsheet sheet1 = new Spreadsheet(null, null, "1.0");
+            sheet1.SetContentsOfCell("A1", "5.0");
+            sheet1.Save("woah.txt");
+            Assert.AreEqual("1.0", sheet1.GetSavedVersion("woah.txt"));
+        }
+
+        /// <summary>
+        /// Other simple tests
+        /// </summary>
+        [TestMethod]
+        public void SimpleGetNamesOfNonEmptyCells()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet();
+            sheet.SetContentsOfCell("A1", "hi");
+            sheet.SetContentsOfCell("A2", "hii");
+            sheet.SetContentsOfCell("A3", "hiii");
+            sheet.SetContentsOfCell("A4", "hiiii");
+            sheet.SetContentsOfCell("A5", "hiiiii");
+            sheet.SetContentsOfCell("A1", "");
+
+            Assert.AreEqual(4, sheet.GetNamesOfAllNonemptyCells().Count());
+        }
+
         [TestMethod]
         public void SimpleDependencyCheckWithSetCellContents()
         {
@@ -94,35 +192,6 @@ namespace SpreadsheetTests
             Assert.IsTrue(list.SequenceEqual(check1) || list.SequenceEqual(check2));
         }
 
-        [TestMethod]
-        public void ChangedWhenMadeSavedAndChanged()
-        {
-            AbstractSpreadsheet sheet = new Spreadsheet();
-            Assert.IsFalse(sheet.Changed);
-            sheet.SetContentsOfCell("A1", "5.0");
-            Assert.IsTrue(sheet.Changed);
-            sheet.Save("changed.txt");
-            Assert.IsFalse(sheet.Changed);
-            sheet.SetContentsOfCell("A1", "=5 + 2");
-            Assert.AreEqual(new Formula("5+2"), sheet.GetCellContents("A1"));
-        }
-
-        [TestMethod]
-        public void FourArgumentConstructorWithNullDelegatesAndTestLoad()
-        {
-            AbstractSpreadsheet sheet = new Spreadsheet("changed.txt", null, null, "default");
-            Assert.AreEqual(5.0, sheet.GetCellContents("A1"));
-        }
-
-        [TestMethod]
-        public void CheckingVersion()
-        {
-            AbstractSpreadsheet sheet1 = new Spreadsheet(null, null, "1.0");
-            sheet1.SetContentsOfCell("A1", "5.0");
-            sheet1.Save("woah.txt");
-            Assert.AreEqual("1.0", sheet1.GetSavedVersion("woah.txt"));
-        }
-
         #endregion Simple tests
 
         #region Exception tests
@@ -132,7 +201,7 @@ namespace SpreadsheetTests
         /// </summary>
         [TestMethod()]
         [ExpectedException(typeof(InvalidNameException))]
-        public void GetCellContentsNullName()
+        public void GetContentsNullName()
         {
             AbstractSpreadsheet sheet = new Spreadsheet();
             sheet.GetCellContents(null);
@@ -140,10 +209,62 @@ namespace SpreadsheetTests
 
         [TestMethod()]
         [ExpectedException(typeof(InvalidNameException))]
-        public void GetCellContentsInvalidName()
+        public void GetContentsInvalidName()
         {
             AbstractSpreadsheet sheet = new Spreadsheet();
             sheet.GetCellContents("8_A");
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(InvalidNameException))]
+        public void GetContentsInvalidNormalizedIsValid()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet(s => s.Any(char.IsUpper), s => s.ToLower(), "1.0");
+            sheet.GetCellContents("a1");
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(InvalidNameException))]
+        public void GetContentsInvalidNormalized()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet(s => true, s => "%$", "1.0");
+            sheet.GetCellContents("a1");
+        }
+
+        /// <summary>
+        /// GetValue exception tests
+        /// </summary>
+
+        [TestMethod()]
+        [ExpectedException(typeof(InvalidNameException))]
+        public void GetValueNullName()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet();
+            sheet.GetCellValue(null);
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(InvalidNameException))]
+        public void GetValueInvalidName()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet();
+            sheet.GetCellValue("%$");
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(InvalidNameException))]
+        public void GetValueInvalidNormalizedIsValid()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet(s => s.Any(char.IsUpper), s => s.ToLower(), "1.0");
+            sheet.GetCellValue("a1");
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(InvalidNameException))]
+        public void GetCellContentsInvalidNormalized()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet(s => true, s => "%$", "1.0");
+            sheet.GetCellValue("a1");
         }
 
         /// <summary>
@@ -163,6 +284,22 @@ namespace SpreadsheetTests
         {
             AbstractSpreadsheet sheet = new Spreadsheet();
             sheet.SetContentsOfCell("%50", "5.0");
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(InvalidNameException))]
+        public void SetCellInvalidNormalizedIsValid()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet(s => s.Any(char.IsUpper), s => s.ToLower(), "1.0");
+            sheet.SetContentsOfCell("a1", "5.0");
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(InvalidNameException))]
+        public void SetCellInvalidNormalized()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet(s => true, s => "%$", "1.0");
+            sheet.SetContentsOfCell("a1", "5.0");
         }
 
         /// <summary>
@@ -212,6 +349,14 @@ namespace SpreadsheetTests
             sheet.SetContentsOfCell("9", "=32 - 1");
         }
 
+        [TestMethod()]
+        [ExpectedException(typeof(FormulaFormatException))]
+        public void SetCellFormulaInvalidFormula()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet();
+            sheet.SetContentsOfCell("a1", "=(((5 + 1))");
+        }
+
         /// <summary>
         /// Cyclic exceptions
         /// </summary>
@@ -237,15 +382,9 @@ namespace SpreadsheetTests
 
         [TestMethod()]
         [ExpectedException(typeof(SpreadsheetReadWriteException))]
-        public void LoadingWithInvalidElementsInFile()
-        {
-            AbstractSpreadsheet sheet = new Spreadsheet("spadsheet.txt", null, null, "default");
-        }
-
-        [TestMethod()]
-        [ExpectedException(typeof(SpreadsheetReadWriteException))]
         public void LoadingWithInvalidCellName()
         {
+            makeIncorrectXmlCellName("invalidcell.txt");
             AbstractSpreadsheet sheet = new Spreadsheet("invalidcell.txt", null, null, "default");
         }
 
@@ -269,8 +408,17 @@ namespace SpreadsheetTests
         [ExpectedException(typeof(SpreadsheetReadWriteException))]
         public void GettingVersionOfXmlWithNoVersion()
         {
+            makeIncorrectXmlNoVersion("woahoof.txt");
             AbstractSpreadsheet sheet = new Spreadsheet();
             sheet.GetSavedVersion("woahoof.txt");
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(SpreadsheetReadWriteException))]
+        public void GettingVersionOfXmlWithInvalidElement()
+        {
+            makeIncorrectXmlElement("invalidelement.txt");
+            AbstractSpreadsheet sheet = new Spreadsheet("invalidelement.txt", null, null, "default");
         }
 
         [TestMethod()]
@@ -280,6 +428,116 @@ namespace SpreadsheetTests
             AbstractSpreadsheet sheet = new Spreadsheet();
             sheet.GetSavedVersion("/nonexistent/whoop.txt");
         }
+
+        #region XML Helper Methods
+
+        /// <summary>
+        /// Creates an xml file with the given file name that contains spreadsheet element with no version attribute
+        /// </summary>
+        /// <param name="filename"></param>
+        private void makeIncorrectXmlNoVersion(string filename)
+        {
+            //Sets up xmlwriter
+            XmlWriterSettings settings = new XmlWriterSettings();
+            settings.Indent = true;
+            settings.IndentChars = "  ";
+
+            XmlWriter writer = null;
+
+            //Write file
+            try
+            {
+                using (writer = XmlWriter.Create(filename, settings))
+                {
+                    //Top of document
+                    writer.WriteStartDocument();
+                    writer.WriteStartElement("Spreadsheet");
+
+                    //End
+                    writer.WriteEndElement();
+                    writer.WriteEndDocument();
+                }
+            }
+            catch
+            {
+                throw new SpreadsheetReadWriteException("Problem saving xml file. Check if filename is valid.");
+            }
+        }
+
+        /// <summary>
+        /// Makes an xml file with the given file name with an invalid cell name
+        /// </summary>
+        /// <param name="filename"></param>
+        private void makeIncorrectXmlCellName(string filename)
+        {
+            //Sets up xmlwriter
+            XmlWriterSettings settings = new XmlWriterSettings();
+            settings.Indent = true;
+            settings.IndentChars = "  ";
+
+            XmlWriter writer = null;
+
+            //Write file
+            try
+            {
+                using (writer = XmlWriter.Create(filename, settings))
+                {
+                    //Makes doc
+                    writer.WriteStartDocument();
+                    writer.WriteStartElement("Spreadsheet");
+                    writer.WriteAttributeString("version", "default");
+                    writer.WriteStartElement("Cell");
+                    writer.WriteStartElement("Name");
+                    writer.WriteValue("%sdfg");
+                    writer.WriteEndElement();
+                    writer.WriteStartElement("Contents");
+                    writer.WriteValue("5.0");
+                    writer.WriteEndElement();
+                    writer.WriteEndElement();
+                    writer.WriteEndElement();
+                    writer.WriteEndDocument();
+                }
+            }
+            catch
+            {
+                throw new SpreadsheetReadWriteException("Problem saving xml file. Check if filename is valid.");
+            }
+        }
+
+        /// <summary>
+        /// Makes an xml file with the given file name with an invalid xml element
+        /// </summary>
+        /// <param name="filename"></param>
+        private void makeIncorrectXmlElement(string filename)
+        {
+            //Sets up xmlwriter
+            XmlWriterSettings settings = new XmlWriterSettings();
+            settings.Indent = true;
+            settings.IndentChars = "  ";
+
+            XmlWriter writer = null;
+
+            //Write file
+            try
+            {
+                using (writer = XmlWriter.Create(filename, settings))
+                {
+                    //Makes doc
+                    writer.WriteStartDocument();
+                    writer.WriteStartElement("Spreadsheet");
+                    writer.WriteAttributeString("version", "default");
+                    writer.WriteStartElement("HiThere");
+                    writer.WriteEndElement();
+                    writer.WriteEndElement();
+                    writer.WriteEndDocument();
+                }
+            }
+            catch
+            {
+                throw new SpreadsheetReadWriteException("Problem saving xml file. Check if filename is valid.");
+            }
+        }
+        #endregion
 
         #endregion Exception tests
 
@@ -340,6 +598,12 @@ namespace SpreadsheetTests
 
         //    //Asserts if sequence of check equals list returned by SetCellContents of z26 to a double
         //    Assert.IsTrue(check.SequenceEqual(sheet.SetContentsOfCell("z26", "5.0")));
+
+        //    //Checks if all cells got 5.0 as value
+        //    foreach(string s in sheet.GetNamesOfAllNonemptyCells())
+        //    {
+        //        Assert.AreEqual(5.0, sheet.GetCellValue(s));
+        //    }
         //}
 
         #endregion Complicated Tests

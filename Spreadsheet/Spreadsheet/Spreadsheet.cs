@@ -1,7 +1,8 @@
 ﻿// Author: Sam Peters
-//Version 2.0 - 9/29/2020 - Implemented methods
-//Version 2.1 - 9/30/2020 - Added tests
+//Version 2.0 - 9/29/2020 - Implemented most methods
+//Version 2.1 - 9/30/2020 - Finished implementation and added tests
 //Version 2.1.1 - 10/1/2020 - Added this header and other comments
+//Version 2.2 - 10/2/2020 - Added final tests to get full coverage, finalized implementation
 
 using SpreadsheetUtilities;
 using System;
@@ -295,8 +296,9 @@ namespace SS
                     {
                         if (reader.Name == "Spreadsheet")
                         {
-                            //Then returns version
-                            return reader.GetAttribute("version");
+                            //If attribute is in cell, return version
+                            if(reader.AttributeCount == 1)
+                                return reader.GetAttribute("version");
                         }
                     }
                     throw new SpreadsheetReadWriteException("Version not found in xml file. Please check file and filepath");
@@ -319,6 +321,9 @@ namespace SS
 
             XmlReader reader = null;
 
+            string tempName = null;
+            string tempContents = null;
+
             //Creates and goes through xml file
             try
             {
@@ -326,32 +331,48 @@ namespace SS
                 {
                     while (reader.Read())
                     {
-                        //If top, then get version
-                        if (reader.NodeType == XmlNodeType.Element && reader.Name == "Spreadsheet")
+                        //If start element, get version, name of cell, or contents of cell
+                        if(reader.IsStartElement())
                         {
-                            if (reader.GetAttribute("version") != Version)
-                                throw new SpreadsheetReadWriteException("Version does not match version of given xml file.");
+                            switch(reader.Name)
+                            {
+                                case ("Spreadsheet"):
+                                    if (reader.GetAttribute("version") != Version)
+                                        throw new SpreadsheetReadWriteException("Version does not match version of given xml file.");
+                                    break;
+                                case ("Cell"):
+                                    break;
+                                case ("Name"):
+                                    reader.Read();
+                                    tempName = reader.Value;
+                                    break;
+                                case ("Contents"):
+                                    reader.Read();
+                                    tempContents = reader.Value;
+                                    break;
+                                default:
+                                    throw new SpreadsheetReadWriteException("Invalid element found in XML file: " + reader.Name);
+                            }
                         }
-                        //If cell, make cell from it
-                        else if (reader.NodeType == XmlNodeType.Element && reader.Name == "Cell")
-                        {
-                            reader.Read();
-                            reader.Read();
-                            reader.Read();
-                            string cellName = reader.Value;
-                            reader.Read();
-                            reader.Read();
-                            reader.Read();
-                            reader.Read();
-                            string cellContents = reader.Value;
 
+                        //If name and contents found, make cell
+                        if(!(tempName is null) && !(tempContents is null))
+                        {
                             try
                             {
-                                SetContentsOfCell(cellName, cellContents);
+                                SetContentsOfCell(tempName, tempContents);
                             }
                             catch
                             {
-                                throw new SpreadsheetReadWriteException("Invalid cell found in spreadsheet involving cell: " + cellName);
+                                string throwName = tempName;
+                                tempName = null;
+                                tempContents = null;
+                                throw new SpreadsheetReadWriteException("Invalid cell found in spreadsheet involving cell: " + throwName);
+                            }
+                            finally
+                            {
+                                tempName = null;
+                                tempContents = null;
                             }
                         }
                     }
@@ -414,17 +435,17 @@ namespace SS
                     {
                         writer.WriteStartElement("Cell");
                         writer.WriteStartElement("Name");
-                        writer.WriteString(s);
+                        writer.WriteValue(s);
                         writer.WriteEndElement();
                         writer.WriteStartElement("Contents");
                         if (sheet[s].contents is double)
-                            writer.WriteString(sheet[s].contents.ToString());
+                            writer.WriteValue(sheet[s].contents.ToString());
                         else if (sheet[s].contents is string)
-                            writer.WriteString(sheet[s].contents.ToString());
+                            writer.WriteValue(sheet[s].contents.ToString());
                         else
                         {
                             Formula formulaContents = (Formula)sheet[s].contents;
-                            writer.WriteString("=" + formulaContents.ToString());
+                            writer.WriteValue("=" + formulaContents.ToString());
                         }
                         writer.WriteEndElement();
                         writer.WriteEndElement();
@@ -543,16 +564,15 @@ namespace SS
             {
                 if(sheet[s].contents is string)
                 {
-                    sheet[s].value = s;
+                    sheet[s].value = sheet[s].contents;
                 }
                 else if (sheet[s].contents is double)
                 {
-                    sheet[s].value = s;
+                    sheet[s].value = Double.Parse(sheet[s].contents.ToString());
                 }
                 else if (sheet[s].contents is Formula)
                 {
-                    Formula f = (Formula)sheet[s].contents;
-                    sheet[s].value = f.Evaluate(Lookup);
+                    sheet[s].value = ((Formula)sheet[s].contents).Evaluate(Lookup);
                 }
             }
         }
@@ -598,7 +618,7 @@ namespace SS
                 {
                     value = contents;
                 }
-                else if (contents is int)
+                else if (contents is double)
                 {
                     value = contents;
                 }
