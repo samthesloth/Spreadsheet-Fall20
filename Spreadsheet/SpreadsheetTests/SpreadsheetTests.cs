@@ -176,7 +176,7 @@ namespace SpreadsheetTests
         }
 
         [TestMethod]
-        public void SimpleDependencyCheckWithSetCellContents()
+        public void SimpleDependencyCheckWithSetContentsOfCell()
         {
             AbstractSpreadsheet sheet = new Spreadsheet();
             sheet.SetContentsOfCell("A1", "5.0");
@@ -406,6 +406,24 @@ namespace SpreadsheetTests
 
         [TestMethod()]
         [ExpectedException(typeof(SpreadsheetReadWriteException))]
+        public void SavingNullFileName()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet();
+            sheet.SetContentsOfCell("a1", "hi");
+            sheet.Save(null);
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(SpreadsheetReadWriteException))]
+        public void SavingEmptyFileName()
+        {
+            AbstractSpreadsheet sheet = new Spreadsheet();
+            sheet.SetContentsOfCell("a1", "hi");
+            sheet.Save("");
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(SpreadsheetReadWriteException))]
         public void GettingVersionOfXmlWithNoVersion()
         {
             makeIncorrectXmlNoVersion("woahoof.txt");
@@ -597,7 +615,7 @@ namespace SpreadsheetTests
         //        }
         //    }
 
-        //    //Asserts if sequence of check equals list returned by SetCellContents of z26 to a double
+        //    //Asserts if sequence of check equals list returned by SetContentsOfCell of z26 to a double
         //    Assert.IsTrue(check.SequenceEqual(sheet.SetContentsOfCell("z26", "5.0")));
 
         //    //Checks if all cells got 5.0 as value
@@ -606,6 +624,272 @@ namespace SpreadsheetTests
         //        Assert.AreEqual(5.0, sheet.GetCellValue(s));
         //    }
         //}
+
+        /// <summary>
+        /// Stress tests taken from ps4 grading tests
+        /// </summary>
+
+        [TestMethod(), ]
+        [TestCategory("31")]
+        public void TestStress1()
+        {
+            Spreadsheet s = new Spreadsheet();
+            s.SetContentsOfCell("A1", ("=B1+B2"));
+            s.SetContentsOfCell("B1", ("=C1-C2"));
+            s.SetContentsOfCell("B2", ("=C3*C4"));
+            s.SetContentsOfCell("C1", ("=D1*D2"));
+            s.SetContentsOfCell("C2", ("=D3*D4"));
+            s.SetContentsOfCell("C3", ("=D5*D6"));
+            s.SetContentsOfCell("C4", ("=D7*D8"));
+            s.SetContentsOfCell("D1", ("=E1"));
+            s.SetContentsOfCell("D2", ("=E1"));
+            s.SetContentsOfCell("D3", ("=E1"));
+            s.SetContentsOfCell("D4", ("=E1"));
+            s.SetContentsOfCell("D5", ("=E1"));
+            s.SetContentsOfCell("D6", ("=E1"));
+            s.SetContentsOfCell("D7", ("=E1"));
+            s.SetContentsOfCell("D8", ("=E1"));
+            IList<String> cells = s.SetContentsOfCell("E1", "0");
+            Assert.IsTrue(new HashSet<string>() { "A1", "B1", "B2", "C1", "C2", "C3", "C4", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "E1" }.SetEquals(cells));
+        }
+
+        // Repeated for extra weight
+        [TestMethod(), ]
+        [TestCategory("32")]
+        public void TestStress1a()
+        {
+            TestStress1();
+        }
+        [TestMethod(), ]
+        [TestCategory("33")]
+        public void TestStress1b()
+        {
+            TestStress1();
+        }
+        [TestMethod(), ]
+        [TestCategory("34")]
+        public void TestStress1c()
+        {
+            TestStress1();
+        }
+
+        [TestMethod(), ]
+        [TestCategory("35")]
+        public void TestStress2()
+        {
+            Spreadsheet s = new Spreadsheet();
+            ISet<String> cells = new HashSet<string>();
+            for (int i = 1; i < 200; i++)
+            {
+                cells.Add("A" + i);
+                Assert.IsTrue(cells.SetEquals(s.SetContentsOfCell("A" + i, ("=A" + (i + 1).ToString()))));
+            }
+        }
+        [TestMethod(), ]
+        [TestCategory("36")]
+        public void TestStress2a()
+        {
+            TestStress2();
+        }
+        [TestMethod(), ]
+        [TestCategory("37")]
+        public void TestStress2b()
+        {
+            TestStress2();
+        }
+        [TestMethod(), ]
+        [TestCategory("38")]
+        public void TestStress2c()
+        {
+            TestStress2();
+        }
+
+        [TestMethod(), ]
+        [TestCategory("39")]
+        public void TestStress3()
+        {
+            Spreadsheet s = new Spreadsheet();
+            for (int i = 1; i < 200; i++)
+            {
+                s.SetContentsOfCell("A" + i, ("=A" + (i + 1).ToString()));
+            }
+            try
+            {
+                s.SetContentsOfCell("A150", ("=A50"));
+                Assert.Fail();
+            }
+            catch (CircularException)
+            {
+            }
+        }
+
+        [TestMethod(), ]
+        [TestCategory("40")]
+        public void TestStress3a()
+        {
+            TestStress3();
+        }
+        [TestMethod(), ]
+        [TestCategory("41")]
+        public void TestStress3b()
+        {
+            TestStress3();
+        }
+        [TestMethod(), ]
+        [TestCategory("42")]
+        public void TestStress3c()
+        {
+            TestStress3();
+        }
+
+        [TestMethod(), ]
+        [TestCategory("43")]
+        public void TestStress4()
+        {
+            Spreadsheet s = new Spreadsheet();
+            for (int i = 0; i < 500; i++)
+            {
+                s.SetContentsOfCell("A1" + i, ("=A1" + (i + 1).ToString()));
+            }
+            LinkedList<string> firstCells = new LinkedList<string>();
+            LinkedList<string> lastCells = new LinkedList<string>();
+            for (int i = 0; i < 250; i++)
+            {
+                firstCells.AddFirst("A1" + i);
+                lastCells.AddFirst("A1" + (i + 250));
+            }
+            Assert.IsTrue(s.SetContentsOfCell("A1249", "25.0").SequenceEqual(firstCells));
+            Assert.IsTrue(s.SetContentsOfCell("A1499", "0").SequenceEqual(lastCells));
+        }
+        [TestMethod(), ]
+        [TestCategory("44")]
+        public void TestStress4a()
+        {
+            TestStress4();
+        }
+        [TestMethod(), ]
+        [TestCategory("45")]
+        public void TestStress4b()
+        {
+            TestStress4();
+        }
+        [TestMethod(), ]
+        [TestCategory("46")]
+        public void TestStress4c()
+        {
+            TestStress4();
+        }
+
+        [TestMethod(), ]
+        [TestCategory("47")]
+        public void TestStress5()
+        {
+            RunRandomizedTest(47, 2519);
+        }
+
+        [TestMethod(), ]
+        [TestCategory("48")]
+        public void TestStress6()
+        {
+            RunRandomizedTest(48, 2521);
+        }
+
+        [TestMethod(), ]
+        [TestCategory("49")]
+        public void TestStress7()
+        {
+            RunRandomizedTest(49, 2526);
+        }
+
+        [TestMethod(), ]
+        [TestCategory("50")]
+        public void TestStress8()
+        {
+            RunRandomizedTest(50, 2521);
+        }
+
+        /// <summary>
+        /// Sets random contents for a random cell 10000 times
+        /// </summary>
+        /// <param name="seed">Random seed</param>
+        /// <param name="size">The known resulting spreadsheet size, given the seed</param>
+        public void RunRandomizedTest(int seed, int size)
+        {
+            Spreadsheet s = new Spreadsheet();
+            Random rand = new Random(seed);
+            for (int i = 0; i < 10000; i++)
+            {
+                try
+                {
+                    switch (rand.Next(3))
+                    {
+                        case 0:
+                            s.SetContentsOfCell(randomName(rand), "3.14");
+                            break;
+                        case 1:
+                            s.SetContentsOfCell(randomName(rand), "hello");
+                            break;
+                        case 2:
+                            s.SetContentsOfCell(randomName(rand), randomFormula(rand));
+                            break;
+                    }
+                }
+                catch (CircularException)
+                {
+                }
+            }
+            ISet<string> set = new HashSet<string>(s.GetNamesOfAllNonemptyCells());
+            Assert.AreEqual(size, set.Count);
+        }
+
+        /// <summary>
+        /// Generates a random cell name with a capital letter and number between 1 - 99
+        /// </summary>
+        /// <param name="rand"></param>
+        /// <returns></returns>
+        private String randomName(Random rand)
+        {
+            return "ABCDEFGHIJKLMNOPQRSTUVWXYZ".Substring(rand.Next(26), 1) + (rand.Next(99) + 1);
+        }
+
+        /// <summary>
+        /// Generates a random Formula
+        /// </summary>
+        /// <param name="rand"></param>
+        /// <returns></returns>
+        private String randomFormula(Random rand)
+        {
+            String f = randomName(rand);
+            for (int i = 0; i < 10; i++)
+            {
+                switch (rand.Next(4))
+                {
+                    case 0:
+                        f += "+";
+                        break;
+                    case 1:
+                        f += "-";
+                        break;
+                    case 2:
+                        f += "*";
+                        break;
+                    case 3:
+                        f += "/";
+                        break;
+                }
+                switch (rand.Next(2))
+                {
+                    case 0:
+                        f += 7.2;
+                        break;
+                    case 1:
+                        f += randomName(rand);
+                        break;
+                }
+            }
+            return f;
+        }
+
 
         #endregion Complicated Tests
     }

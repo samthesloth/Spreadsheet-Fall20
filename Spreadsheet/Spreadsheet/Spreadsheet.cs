@@ -417,7 +417,6 @@ namespace SS
         /// </summary>
         public override void Save(string filename)
         {
-            Changed = false;
 
             //Sets up xmlwriter
             XmlWriterSettings settings = new XmlWriterSettings();
@@ -465,6 +464,10 @@ namespace SS
             catch
             {
                 throw new SpreadsheetReadWriteException("Problem saving xml file. Check if filename is valid.");
+            }
+            finally
+            {
+                Changed = false;
             }
         }
 
