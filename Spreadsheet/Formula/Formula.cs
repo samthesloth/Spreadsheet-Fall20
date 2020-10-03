@@ -49,10 +49,13 @@ namespace SpreadsheetUtilities
         //Holds tokens of the formula
         private string[] tokens;
 
+        //Regix for valid vars
         private string validVar = "^[a-zA-Z_]+[0-9a-zA-Z_]*$";
 
+        //Formula as a string
         private string formulaString;
 
+        //Variables that formula contains
         private List<string> variables;
 
         /// <summary>
@@ -135,7 +138,7 @@ namespace SpreadsheetUtilities
                     if (!isValid(current))
                         throw new FormulaFormatException("Variable is not valid according to isValid delegate. Check to make sure token at index " + i + " is a valid variable");
 
-                    if(!variables.Contains(current))
+                    if (!variables.Contains(current))
                         variables.Add(current);
                 }
 
@@ -548,7 +551,7 @@ namespace ExtensionMethods
     /// <summary>
     /// Class to hold extension method for stack. Methods are TryPeek, equivalent to stack's method with the same name.
     /// </summary>
-    internal static class MyExtensions
+    internal static class StackExtensions
     {
         /// <summary>
         /// Returns whether there is something in the stack. If there is, also uses out to return what the item is.
