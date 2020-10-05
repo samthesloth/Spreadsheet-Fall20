@@ -314,14 +314,14 @@ namespace SS
 
                 // Color the background of the data area white
                 e.Graphics.FillRectangle(
-                    new SolidBrush(Color.White),
+                    new SolidBrush(Color.Black),
                     LABEL_COL_WIDTH,
                     LABEL_ROW_HEIGHT,
                     (COL_COUNT - _firstColumn) * DATA_COL_WIDTH,
                     (ROW_COUNT - _firstRow) * DATA_ROW_HEIGHT);
 
                 // Pen, brush, and fonts to use
-                Brush brush = new SolidBrush(Color.Black);
+                Brush brush = new SolidBrush(Color.White);
                 Pen pen = new Pen(brush);
                 Font regularFont = Font;
                 Font boldFont = new Font(regularFont, FontStyle.Bold);
@@ -413,7 +413,7 @@ namespace SS
                 g.DrawString(
                       label,
                       f,
-                      new SolidBrush(Color.Black),
+                      new SolidBrush(Color.White),
                       LABEL_COL_WIDTH + x * DATA_COL_WIDTH + (DATA_COL_WIDTH - width) / 2,
                       (LABEL_ROW_HEIGHT - height) / 2);
             }
@@ -432,7 +432,7 @@ namespace SS
                 g.DrawString(
                     label,
                     f,
-                    new SolidBrush(Color.Black),
+                    new SolidBrush(Color.White),
                     LABEL_COL_WIDTH - width - PADDING,
                     LABEL_ROW_HEIGHT + y * DATA_ROW_HEIGHT + (DATA_ROW_HEIGHT - height) / 2);
             }
