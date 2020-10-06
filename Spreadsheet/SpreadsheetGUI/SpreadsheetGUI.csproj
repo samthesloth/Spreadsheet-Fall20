@@ -81,6 +81,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Formula\Formula.csproj">
+      <Project>{1aa66756-49cd-4144-9eb0-79ebbea89a6c}</Project>
+      <Name>Formula</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SpreadsheetPanel\SpreadsheetPanel.csproj">
       <Project>{5ED5153E-8C2C-45B8-BA42-3A5A6D198475}</Project>
       <Name>SpreadsheetPanel</Name>

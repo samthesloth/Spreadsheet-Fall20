@@ -35,10 +35,12 @@ namespace SpreadsheetGUI
             this.valueBox = new System.Windows.Forms.TextBox();
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.newToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loadToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.newToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.closeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.helpProvider1 = new System.Windows.Forms.HelpProvider();
+            this.enterButton = new System.Windows.Forms.Button();
             this.menuStrip.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -61,18 +63,21 @@ namespace SpreadsheetGUI
             this.contentBox.Name = "contentBox";
             this.contentBox.Size = new System.Drawing.Size(108, 22);
             this.contentBox.TabIndex = 1;
+            this.contentBox.TextChanged += new System.EventHandler(this.contentBox_TextChanged);
             // 
             // valueBox
             // 
             this.valueBox.BackColor = System.Drawing.SystemColors.MenuText;
+            this.valueBox.Enabled = false;
             this.valueBox.ForeColor = System.Drawing.SystemColors.Menu;
-            this.valueBox.Location = new System.Drawing.Point(164, 31);
+            this.valueBox.Location = new System.Drawing.Point(269, 31);
             this.valueBox.Name = "valueBox";
             this.valueBox.Size = new System.Drawing.Size(108, 22);
             this.valueBox.TabIndex = 2;
             // 
             // menuStrip
             // 
+            this.menuStrip.BackColor = System.Drawing.SystemColors.ControlText;
             this.menuStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem});
@@ -89,42 +94,57 @@ namespace SpreadsheetGUI
             this.saveToolStripMenuItem,
             this.loadToolStripMenuItem,
             this.closeToolStripMenuItem});
+            this.fileToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(46, 24);
             this.fileToolStripMenuItem.Text = "File";
             // 
+            // newToolStripMenuItem
+            // 
+            this.newToolStripMenuItem.Name = "newToolStripMenuItem";
+            this.newToolStripMenuItem.Size = new System.Drawing.Size(128, 26);
+            this.newToolStripMenuItem.Text = "New";
+            this.newToolStripMenuItem.Click += new System.EventHandler(this.newToolStripMenuItem_Click);
+            // 
             // saveToolStripMenuItem
             // 
             this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            this.saveToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.saveToolStripMenuItem.Size = new System.Drawing.Size(128, 26);
             this.saveToolStripMenuItem.Text = "Save";
             // 
             // loadToolStripMenuItem
             // 
             this.loadToolStripMenuItem.Name = "loadToolStripMenuItem";
-            this.loadToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.loadToolStripMenuItem.Size = new System.Drawing.Size(128, 26);
             this.loadToolStripMenuItem.Text = "Load";
-            // 
-            // newToolStripMenuItem
-            // 
-            this.newToolStripMenuItem.Name = "newToolStripMenuItem";
-            this.newToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
-            this.newToolStripMenuItem.Text = "New";
-            this.newToolStripMenuItem.Click += new System.EventHandler(this.newToolStripMenuItem_Click);
             // 
             // closeToolStripMenuItem
             // 
             this.closeToolStripMenuItem.Name = "closeToolStripMenuItem";
-            this.closeToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.closeToolStripMenuItem.Size = new System.Drawing.Size(128, 26);
             this.closeToolStripMenuItem.Text = "Close";
             this.closeToolStripMenuItem.Click += new System.EventHandler(this.closeToolStripMenuItem_Click);
             // 
+            // enterButton
+            // 
+            this.enterButton.BackColor = System.Drawing.SystemColors.MenuText;
+            this.enterButton.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(192)))), ((int)(((byte)(255)))));
+            this.enterButton.ForeColor = System.Drawing.SystemColors.Control;
+            this.enterButton.Location = new System.Drawing.Point(141, 31);
+            this.enterButton.Name = "enterButton";
+            this.enterButton.Size = new System.Drawing.Size(30, 22);
+            this.enterButton.TabIndex = 4;
+            this.enterButton.UseVisualStyleBackColor = false;
+            this.enterButton.Click += new System.EventHandler(this.enterButton_Click);
+            // 
             // SheetForm
             // 
+            this.AcceptButton = this.enterButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ActiveCaptionText;
             this.ClientSize = new System.Drawing.Size(885, 484);
+            this.Controls.Add(this.enterButton);
             this.Controls.Add(this.valueBox);
             this.Controls.Add(this.contentBox);
             this.Controls.Add(this.spreadsheetPanel);
@@ -150,6 +170,8 @@ namespace SpreadsheetGUI
         private System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem loadToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem closeToolStripMenuItem;
+        private System.Windows.Forms.HelpProvider helpProvider1;
+        private System.Windows.Forms.Button enterButton;
     }
 }
 
