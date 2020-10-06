@@ -1,7 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿// Author: Sam Peters
+//Version 1.0 - 10/4/2020 - Set up file and implemented multiple forms
+
+
+
+using System;
 using System.Windows.Forms;
 
 namespace SpreadsheetGUI
