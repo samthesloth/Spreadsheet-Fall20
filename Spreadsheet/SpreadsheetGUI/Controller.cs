@@ -1,6 +1,7 @@
 ﻿// Author: Sam Peters
 //Version 1.0 - 10/5/2020 - Implemented some of the cell features
 //Version 1.2 - 10/6/2020 - (Hopefully) finished cell features and added safety closing
+//Version 1.3 - 10/7/2020 - Added background worker for enter button, added save and load dialog, added arrow key support
 
 
 using SS;
@@ -9,7 +10,6 @@ using System.Windows.Forms;
 using System;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
-using System.Threading;
 
 namespace SpreadsheetGUI
 {
@@ -22,7 +22,7 @@ namespace SpreadsheetGUI
         private static Func<string, bool> isValid = validCellName;
 
         //Spreadsheet to hold cells of spreadsheet
-        private Spreadsheet sheet = new Spreadsheet(isValid, s => s.ToUpper(), "default");
+        private Spreadsheet sheet = new Spreadsheet(isValid, s => s.ToUpper(), "1.3");
         //Form to be used
         private SheetForm form;
 
@@ -75,7 +75,7 @@ namespace SpreadsheetGUI
         /// <summary>
         /// When enter button is pushed, calculates new content for cell and return value
         /// </summary>
-        internal void enterButton(SpreadsheetPanel ss, string content)
+        internal void enterButton(SpreadsheetPanel ss, string content, System.ComponentModel.DoWorkEventArgs e)
         {
             //List to store cells that we need to update
             List<string> cellsToUpdate = new List<string>();
@@ -113,12 +113,11 @@ namespace SpreadsheetGUI
             else
                 returnValue = tempValue.ToString();
 
-            //Makes a thread to update the cells of the panel
-            Thread cellUpdate = new Thread(() => updateCells(sheet, ss, cellsToUpdate));
-            cellUpdate.Start();
+            //Updates cells
+            updateCells(sheet, ss, cellsToUpdate);
 
-            //Returns content and value to form to display
-            form.endEnterButton(returnContent, returnValue);
+            //Sets result of worker to return content and value
+            e.Result = new Tuple<string, string>(returnContent, returnValue);
         }
 
         /// <summary>
@@ -147,6 +146,88 @@ namespace SpreadsheetGUI
                 ss.SetValue(x, y, value.ToString());
             }
         }
+
+        /// <summary>
+        /// Opens dialog for user to save their spreadsheet
+        /// </summary>
+        internal void save()
+        {
+            //Creates save dialog box
+            SaveFileDialog saveDialog = new SaveFileDialog();
+            saveDialog.Title = "Save Spreadsheet";
+            saveDialog.Filter = "Spreadsheet files (*.sprd)|*.sprd|All files (*.*)|*.*";
+            saveDialog.FilterIndex = 1;
+            saveDialog.RestoreDirectory = true;
+            saveDialog.AddExtension = true;
+            saveDialog.DefaultExt = ".sprd";
+
+            // Saves file or shows error message
+            if (saveDialog.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    sheet.Save(saveDialog.FileName);
+                }
+                catch
+                {
+                    MessageBox.Show("Error saving. Please check file name and try again.", "Invalid file", MessageBoxButtons.OK);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Opens dialog for user to load their spreadsheet
+        /// </summary>
+        internal void load(SpreadsheetPanel ss)
+        {
+            //If current sheet has been changed, prompt the user if they are sure
+            if (sheet.Changed)
+            {
+                if (MessageBox.Show("Spreadsheet isn't saved! Are you sure you want to load another one?", "Unsaved changes", MessageBoxButtons.YesNo) == DialogResult.No)
+                    return;
+            }
+
+            //Clears current sheet
+            ss.Clear();
+
+            //Makes open dialog box
+            OpenFileDialog openDialog = new OpenFileDialog();
+            openDialog.Title = "Open Spreadsheet";
+            openDialog.Filter = "Spreadsheet files (*.sprd)|*.sprd|All files (*.*)|*.*";
+            openDialog.FilterIndex = 1;
+            openDialog.RestoreDirectory = true;
+
+            //Gets file or shows error message
+            if (openDialog.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    //Load spreadsheet, update cells, then returns current box's content, value, and name to form to display
+                    sheet.Load(openDialog.FileName);
+                    updateCells(sheet, ss, new List<string>(sheet.GetNamesOfAllNonemptyCells()));
+                    ss.GetSelection(out int x, out int y);
+                    string cellName = coordsToCell(x, y);
+                    object contents = sheet.GetCellContents(cellName);
+                    object value = sheet.GetCellValue(cellName);
+                    //Gets contents if formula
+                    if (contents is Formula)
+                    {
+                        contents = "=" + contents.ToString();
+                    }
+                    //Gets value if formula error
+                    if (value is FormulaError)
+                    {
+                        value = "FormulaError";
+                    }
+                    form.endCellSelect(contents.ToString(), value.ToString(), cellName);
+                }
+                catch(Exception e)
+                {
+                    MessageBox.Show(e.Message, "Invalid file", MessageBoxButtons.OK);
+                }
+            }
+        }
+
 
         /// <summary>
         /// Helper method that gets the cell name from x and y coordinates

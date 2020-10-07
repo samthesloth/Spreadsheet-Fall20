@@ -319,8 +319,6 @@ namespace SS
         /// </summary>
         public void Load(string filename)
         {
-            Changed = false;
-
             XmlReader reader = null;
 
             string tempName = null;
@@ -340,7 +338,7 @@ namespace SS
                             {
                                 case ("spreadsheet"):
                                     if (reader.GetAttribute("version") != Version)
-                                        throw new SpreadsheetReadWriteException("Version does not match version of given xml file.");
+                                        throw new SpreadsheetReadWriteException("Version does not match version of given spreadsheet file.");
                                     break;
 
                                 case ("cell"):
@@ -392,6 +390,8 @@ namespace SS
             {
                 throw new SpreadsheetReadWriteException("Problem loading xml file. Check if filename is valid and/or if file is corrupted.");
             }
+
+            Changed = false;
         }
 
         /// <summary>
@@ -463,7 +463,7 @@ namespace SS
             }
             catch
             {
-                throw new SpreadsheetReadWriteException("Problem saving xml file. Check if filename is valid.");
+                throw new SpreadsheetReadWriteException("Problem saving file. Check if filename is valid.");
             }
             finally
             {
