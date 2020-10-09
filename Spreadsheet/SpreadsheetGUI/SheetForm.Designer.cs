@@ -30,7 +30,6 @@ namespace SpreadsheetGUI
         /// </summary>
         private void InitializeComponent()
         {
-            this.spreadsheetPanel = new SS.SpreadsheetPanel();
             this.contentBox = new System.Windows.Forms.TextBox();
             this.valueBox = new System.Windows.Forms.TextBox();
             this.menuStrip = new System.Windows.Forms.MenuStrip();
@@ -46,20 +45,10 @@ namespace SpreadsheetGUI
             this.cellLabel = new System.Windows.Forms.Label();
             this.cellBox = new System.Windows.Forms.TextBox();
             this.calculateWorker = new System.ComponentModel.BackgroundWorker();
+            this.spreadsheetPanel = new SS.SpreadsheetPanel();
+            this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // spreadsheetPanel
-            // 
-            this.spreadsheetPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.spreadsheetPanel.BackColor = System.Drawing.SystemColors.ActiveCaptionText;
-            this.spreadsheetPanel.Location = new System.Drawing.Point(126, 31);
-            this.spreadsheetPanel.Name = "spreadsheetPanel";
-            this.spreadsheetPanel.Size = new System.Drawing.Size(747, 441);
-            this.spreadsheetPanel.TabIndex = 0;
-            this.spreadsheetPanel.KeyDown += new System.Windows.Forms.KeyEventHandler(this.SheetForm_KeyDown);
             // 
             // contentBox
             // 
@@ -86,7 +75,8 @@ namespace SpreadsheetGUI
             this.menuStrip.BackColor = System.Drawing.SystemColors.ControlText;
             this.menuStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.fileToolStripMenuItem});
+            this.fileToolStripMenuItem,
+            this.helpToolStripMenuItem});
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.Name = "menuStrip";
             this.menuStrip.Size = new System.Drawing.Size(885, 28);
@@ -115,14 +105,14 @@ namespace SpreadsheetGUI
             // saveToolStripMenuItem
             // 
             this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            this.saveToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.saveToolStripMenuItem.Size = new System.Drawing.Size(128, 26);
             this.saveToolStripMenuItem.Text = "Save";
             this.saveToolStripMenuItem.Click += new System.EventHandler(this.saveToolStripMenuItem_Click);
             // 
             // loadToolStripMenuItem
             // 
             this.loadToolStripMenuItem.Name = "loadToolStripMenuItem";
-            this.loadToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.loadToolStripMenuItem.Size = new System.Drawing.Size(128, 26);
             this.loadToolStripMenuItem.Text = "Load";
             this.loadToolStripMenuItem.Click += new System.EventHandler(this.loadToolStripMenuItem_Click);
             // 
@@ -194,6 +184,25 @@ namespace SpreadsheetGUI
             this.calculateWorker.DoWork += new System.ComponentModel.DoWorkEventHandler(this.calculateWorker_DoWork);
             this.calculateWorker.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.calculateWorker_RunWorkerCompleted);
             // 
+            // spreadsheetPanel
+            // 
+            this.spreadsheetPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.spreadsheetPanel.BackColor = System.Drawing.SystemColors.ActiveCaptionText;
+            this.spreadsheetPanel.Location = new System.Drawing.Point(126, 31);
+            this.spreadsheetPanel.Name = "spreadsheetPanel";
+            this.spreadsheetPanel.Size = new System.Drawing.Size(747, 441);
+            this.spreadsheetPanel.TabIndex = 0;
+            // 
+            // helpToolStripMenuItem
+            // 
+            this.helpToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Menu;
+            this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
+            this.helpToolStripMenuItem.Size = new System.Drawing.Size(55, 24);
+            this.helpToolStripMenuItem.Text = "Help";
+            this.helpToolStripMenuItem.Click += new System.EventHandler(this.helpToolStripMenuItem_Click);
+            // 
             // SheetForm
             // 
             this.AcceptButton = this.enterButton;
@@ -213,7 +222,7 @@ namespace SpreadsheetGUI
             this.MainMenuStrip = this.menuStrip;
             this.Name = "SheetForm";
             this.Text = "Spreadsheet";
-            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.SheetForm_KeyDown);
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form_KeyDown);
             this.menuStrip.ResumeLayout(false);
             this.menuStrip.PerformLayout();
             this.ResumeLayout(false);
@@ -239,6 +248,7 @@ namespace SpreadsheetGUI
         private System.Windows.Forms.Label cellLabel;
         private System.Windows.Forms.TextBox cellBox;
         private System.ComponentModel.BackgroundWorker calculateWorker;
+        private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
     }
 }
 

@@ -3,6 +3,7 @@
 //Version 1.1 - 10/5/2020 - Implemented more of the cell features
 //Version 1.2 - 10/6/2020 - (Hopefully) finished cell features and added safety closing
 //Version 1.3 - 10/7/2020 - Added background worker for enter button, added save and load dialog, added arrow key support
+//Version 1.4 - 10/8/2020 - Added Ctrl functions, help menu, fixed arrow keys
 
 
 using SS;
@@ -32,6 +33,8 @@ namespace SpreadsheetGUI
         {
             //Initialize
             InitializeComponent();
+            this.ActiveControl = contentBox;
+            this.KeyPreview = true;
 
             //Creates controller
             control = new Controller(this);
@@ -148,31 +151,71 @@ namespace SpreadsheetGUI
             contentTip.Show(contentBox.Text, this);
         }
 
-        //Handles when user pushed an arrow key, and then moves a cell over accordingly
-        private void SheetForm_KeyDown(object sender, KeyEventArgs e)
+        //Handles when user pushed an arrow key, and then moves a cell over accordingly OR 
+        //Handles when user does ctrl functions
+        private void Form_KeyDown(object sender, KeyEventArgs e)
         {
+            //Ctrl+key
+            if(e.Control)
+            {
+                switch(e.KeyCode)
+                {
+                    //+s to save
+                    case (Keys.S):
+                        control.save();
+                        break;
+                    //+n for new sheet
+                    case (Keys.N):
+                        SheetFormAppContext.getAppContext().RunForm(new SheetForm());
+                        break;
+                    //+o for open sheet
+                    case (Keys.O):
+                        control.load(spreadsheetPanel);
+                        break;
+                    //+w to close
+                    case (Keys.W):
+                        Close();
+                        break;
+                    //Return with default so final bit doesn't get called
+                    default:
+                        return;
+                }
+                //Prevents load windows ding
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
+
+            //Change selection based on which key is pushed
             spreadsheetPanel.GetSelection(out int x, out int y);
             switch (e.KeyData)
             {
                 case (Keys.Up):
-                    //if (y > 0)
-                        spreadsheetPanel.SetSelection(x, y - 1);
+                    spreadsheetPanel.SetSelection(x, y - 1);
+                    control.cellSelect(spreadsheetPanel);
                     break;
                 case (Keys.Down):
-                    //if (y < 98)
-                        spreadsheetPanel.SetSelection(x, y + 1);
+                    spreadsheetPanel.SetSelection(x, y + 1);
+                    control.cellSelect(spreadsheetPanel);
                     break;
                 case (Keys.Left):
-                    //if (x > 0)
-                        spreadsheetPanel.SetSelection(x-1, y);
+                    spreadsheetPanel.SetSelection(x-1, y);
+                    control.cellSelect(spreadsheetPanel);
                     break;
                 case (Keys.Right):
-                    //if (x < 25)
-                        spreadsheetPanel.SetSelection(x+1, y);
+                    spreadsheetPanel.SetSelection(x+1, y);
+                    control.cellSelect(spreadsheetPanel);
                     break;
                 default: break;
             }
-            control.cellSelect(spreadsheetPanel);
+        }
+
+        //Displays help message when clicked
+        private void helpToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Select a cell and type into the content box and push evaluate or enter to put it into the cell.\n\n" +
+                "Use the arrow keys to move around the cells and the mouse wheel to scroll.\n\n" +
+                "To make a new sheet (Ctrl+N), save your sheet (Ctrl+S), load a sheet (Ctrl+O), or close the current sheet (Ctrl+W), push 'File' in the top left.\n" +
+                "", "Spreadsheet Help", MessageBoxButtons.OK);
         }
     }
 }
