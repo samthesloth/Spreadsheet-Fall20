@@ -14,17 +14,16 @@ Version 1.1 - 10/5/2020 - Implemented more of the cell features
 Version 1.2 - 10/6/2020 - (Hopefully) finished cell features and added safety closing
 Version 1.3 - 10/7/2020 - Added background worker for enter button, added save and load dialog, added arrow key support
 Version 1.4 - 10/8/2020 - Added Ctrl functions, help menu, fixed arrow keys
+//Version 1.5 - 10/9/2020 - Changed New so it would do the correct behavior, added tooltips for value and content, added ability to go to a cell
 
 
 Extra Features of Spreadsheet:
 -Background worker does all the work when you push evaluate--sets the cell, updates cells, and display updates
 -Arrows keys to move around the grid
+-Hover over contents or value boxes to see full entry
+-Type a cell name into the cell box and push find to go to that cell
 -Enter key evaluates
 -Ctrl+s to save
 -Ctrl+o to open
 -Ctrl+n for new sheet
 -Ctrl+w to close
-
-TODO:
--Tooltips
--Mousewheel

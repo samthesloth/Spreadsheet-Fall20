@@ -4,10 +4,10 @@
 //Version 1.2 - 10/6/2020 - (Hopefully) finished cell features and added safety closing
 //Version 1.3 - 10/7/2020 - Added background worker for enter button, added save and load dialog, added arrow key support
 //Version 1.4 - 10/8/2020 - Added Ctrl functions, help menu, fixed arrow keys
+//Version 1.5 - 10/9/2020 - Changed New so it would do the correct behavior, added tooltips for value and content, added ability to go to a cell
 
-
-using SS;
 using System;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace SpreadsheetGUI
@@ -31,19 +31,13 @@ namespace SpreadsheetGUI
         /// </summary>
         public SheetForm()
         {
-            //Initialize
+            //Initialize, set first focus to contentBox, and ensure arrow keys work in the program by setting KeyPreview to true
             InitializeComponent();
             this.ActiveControl = contentBox;
             this.KeyPreview = true;
 
             //Creates controller
             control = new Controller(this);
-
-            //Sets up tooltips
-            contentTip = new ToolTip();
-            contentTip.SetToolTip(contentBox, contentBox.Text);
-            valueTip = new ToolTip();
-            valueTip.SetToolTip(valueBox, valueBox.Text);
 
             //Adds events
             spreadsheetPanel.SelectionChanged += control.cellSelect;
@@ -58,8 +52,11 @@ namespace SpreadsheetGUI
         private void newToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // Tell the application context to run the form on the same
-            // thread as the other forms.
-            SheetFormAppContext.getAppContext().RunForm(new SheetForm());
+            // thread as the other forms. Then prompt user to find file to save.
+            SheetForm temp = new SheetForm();
+            SheetFormAppContext.getAppContext().RunForm(temp);
+            temp.control.newSpreadsheet();
+
         }
 
         /// <summary>
@@ -145,14 +142,10 @@ namespace SpreadsheetGUI
             control.load(spreadsheetPanel);
         }
 
-
-        private void contentBox_MouseEnter(object sender, EventArgs e)
-        {
-            contentTip.Show(contentBox.Text, this);
-        }
-
-        //Handles when user pushed an arrow key, and then moves a cell over accordingly OR 
-        //Handles when user does ctrl functions
+        /// <summary>
+        /// Handles when user pushed an arrow key, and then moves a cell over accordingly OR 
+        /// Handles when user does ctrl functions
+        /// </summary>
         private void Form_KeyDown(object sender, KeyEventArgs e)
         {
             //Ctrl+key
@@ -166,7 +159,9 @@ namespace SpreadsheetGUI
                         break;
                     //+n for new sheet
                     case (Keys.N):
-                        SheetFormAppContext.getAppContext().RunForm(new SheetForm());
+                        SheetForm temp = new SheetForm();
+                        SheetFormAppContext.getAppContext().RunForm(temp);
+                        temp.control.newSpreadsheet();
                         break;
                     //+o for open sheet
                     case (Keys.O):
@@ -180,7 +175,7 @@ namespace SpreadsheetGUI
                     default:
                         return;
                 }
-                //Prevents load windows ding
+                //Prevents windows ding
                 e.Handled = true;
                 e.SuppressKeyPress = true;
             }
@@ -209,13 +204,107 @@ namespace SpreadsheetGUI
             }
         }
 
-        //Displays help message when clicked
-        private void helpToolStripMenuItem_Click(object sender, EventArgs e)
+        /// <summary>
+        /// Displays help message when help is clicked
+        /// </summary>
+        private void helpMenuItem_Click(object sender, EventArgs e)
         {
             MessageBox.Show("Select a cell and type into the content box and push evaluate or enter to put it into the cell.\n\n" +
                 "Use the arrow keys to move around the cells and the mouse wheel to scroll.\n\n" +
-                "To make a new sheet (Ctrl+N), save your sheet (Ctrl+S), load a sheet (Ctrl+O), or close the current sheet (Ctrl+W), push 'File' in the top left.\n" +
-                "", "Spreadsheet Help", MessageBoxButtons.OK);
+                "You can also go to a cell by typing its name into the Cell text box and clicking 'Find'\n\n" +
+                "To make a new sheet (Ctrl+N), save your sheet (Ctrl+S), load a sheet (Ctrl+O), or close the current sheet (Ctrl+W), push 'File' in the top left.\n\n" +
+                "If the contents or value of a cell is too large to see, you can hover over the respected boxes to see the whole entry.\n", "Spreadsheet Help", MessageBoxButtons.OK);
+        }
+
+        /// <summary>
+        /// Opens README when readme button is clicked
+        /// </summary>
+        private void readMeMenuItem_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Process.Start(@"..\..\..\README.txt");
+        }
+
+        /// <summary>
+        /// Displays tooltip of contents when hovering over content box
+        /// </summary>
+        private void contentBox_MouseEnter(object sender, EventArgs e)
+        {
+            contentTip = new ToolTip();
+            contentTip.InitialDelay = 0;
+            contentTip.Show(contentBox.Text, contentBox);
+        }
+
+        /// <summary>
+        /// Removes tooltip when mouse leaves content box
+        /// </summary>
+        private void contentBox_MouseLeave(object sender, EventArgs e)
+        {
+            contentTip.Dispose();
+        }
+
+        /// <summary>
+        /// Displays tooltip of value when hovering over value box
+        /// </summary>
+        private void valueBox_MouseEnter(object sender, EventArgs e)
+        {
+            valueTip = new ToolTip();
+            valueTip.InitialDelay = 0;
+            valueTip.Show(valueBox.Text, valueBox);
+        }
+
+        /// <summary>
+        /// Removes tooltip when mouse leaves value box
+        /// </summary>
+        private void valueBox_MouseLeave(object sender, EventArgs e)
+        {
+            valueTip.Dispose();
+        }
+
+        /// <summary>
+        /// When focus is on cell box, make find button visible to click on
+        /// </summary>
+        private void cellBox_Enter(object sender, EventArgs e)
+        {
+            findButton.Visible = true;
+        }
+
+        /// <summary>
+        /// If focus is taken off cell box (and find button), make find button invisible and reselect cell
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void cellBox_Leave(object sender, EventArgs e)
+        {
+            if (!findButton.Focused)
+            {
+                findButton.Visible = false;
+                control.cellSelect(spreadsheetPanel);
+            }
+        }
+
+        /// <summary>
+        /// When the find button is clicked, go to that cell. If not valid, show message and go to A1
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void findButton_Click(object sender, EventArgs e)
+        {
+            //If cell name matches, go to cell, and display contents and value
+            if (Regex.IsMatch(cellBox.Text, "^[A-Za-z][1-9][0-9]?$"))
+            {
+                cellBox.Text = cellBox.Text.ToUpper();
+                Controller.cellToCoords(cellBox.Text, out int x, out int y);
+                spreadsheetPanel.SetSelection(x, y);
+            }
+            //Otherwise, select A1 and show an error message
+            else
+            {
+                spreadsheetPanel.SetSelection(0, 0);
+                control.cellSelect(spreadsheetPanel);
+                MessageBox.Show("Cell name is not valid. Please try again", "Invalid cell", MessageBoxButtons.OK);
+            }
+            //Make find button invisible
+            findButton.Visible = false;
         }
     }
 }

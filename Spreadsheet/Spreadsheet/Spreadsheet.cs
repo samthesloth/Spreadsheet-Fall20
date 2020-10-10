@@ -285,8 +285,6 @@ namespace SS
         /// </summary>
         public override string GetSavedVersion(string filename)
         {
-            Changed = false;
-
             XmlReader reader = null;
 
             try
@@ -390,8 +388,10 @@ namespace SS
             {
                 throw new SpreadsheetReadWriteException("Problem loading xml file. Check if filename is valid and/or if file is corrupted.");
             }
-
-            Changed = false;
+            finally
+            {
+                Changed = false;
+            }
         }
 
         /// <summary>

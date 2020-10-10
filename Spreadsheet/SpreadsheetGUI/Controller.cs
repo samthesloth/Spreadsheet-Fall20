@@ -2,6 +2,7 @@
 //Version 1.0 - 10/5/2020 - Implemented some of the cell features
 //Version 1.2 - 10/6/2020 - (Hopefully) finished cell features and added safety closing
 //Version 1.3 - 10/7/2020 - Added background worker for enter button, added save and load dialog, added arrow key support
+//Version 1.5 - 10/9/2020 - Added method for making a new spreadsheet
 
 
 using SS;
@@ -22,7 +23,7 @@ namespace SpreadsheetGUI
         private static Func<string, bool> isValid = validCellName;
 
         //Spreadsheet to hold cells of spreadsheet
-        private Spreadsheet sheet = new Spreadsheet(isValid, s => s.ToUpper(), "1.3");
+        private Spreadsheet sheet = new Spreadsheet(isValid, s => s.ToUpper(), "ps6");
         //Form to be used
         private SheetForm form;
 
@@ -160,19 +161,57 @@ namespace SpreadsheetGUI
             saveDialog.RestoreDirectory = true;
             saveDialog.AddExtension = true;
             saveDialog.DefaultExt = ".sprd";
+            saveDialog.OverwritePrompt = true;
+            DialogResult result = saveDialog.ShowDialog();
 
             // Saves file or shows error message
-            if (saveDialog.ShowDialog() == DialogResult.OK)
+            if (result == DialogResult.OK)
             {
                 try
                 {
                     sheet.Save(saveDialog.FileName);
+                    saveDialog.Dispose();
                 }
                 catch
                 {
                     MessageBox.Show("Error saving. Please check file name and try again.", "Invalid file", MessageBoxButtons.OK);
+                    saveDialog.Dispose();
                 }
             }
+        }
+
+        /// <summary>
+        /// Creates and saves a new spreadsheet
+        /// </summary>
+        internal void newSpreadsheet()
+        {
+            //Creates save dialog box
+            SaveFileDialog newDialog = new SaveFileDialog();
+            newDialog.Title = "New Spreadsheet";
+            newDialog.Filter = "Spreadsheet files (*.sprd)|*.sprd|All files (*.*)|*.*";
+            newDialog.FilterIndex = 1;
+            newDialog.RestoreDirectory = true;
+            newDialog.AddExtension = true;
+            newDialog.DefaultExt = ".sprd";
+            newDialog.OverwritePrompt = true;
+
+            // Saves file or shows error message or closes if not saved
+            if (newDialog.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    sheet.Save(newDialog.FileName);
+                    newDialog.Dispose();
+                }
+                catch
+                {
+                    MessageBox.Show("Error saving. Please check file name and try again.", "Invalid file", MessageBoxButtons.OK);
+                    newDialog.Dispose();
+                    form.Close();
+                }
+            }
+            else
+                form.Close();
         }
 
         /// <summary>
@@ -219,11 +258,13 @@ namespace SpreadsheetGUI
                     {
                         value = "FormulaError";
                     }
+                    openDialog.Dispose();
                     form.endCellSelect(contents.ToString(), value.ToString(), cellName);
                 }
                 catch(Exception e)
                 {
                     MessageBox.Show(e.Message, "Invalid file", MessageBoxButtons.OK);
+                    openDialog.Dispose();
                 }
             }
         }
